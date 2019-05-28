@@ -1,0 +1,493 @@
+diff --git a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+index f8ec723..6a10564 100755
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -52,6 +52,7 @@
+ #include "stmmac_ptp.h"
+ #include "stmmac.h"
+ #include "../eth_mac.h"
++#include <linux/regmap.h>
+ 
+ #undef STMMAC_DEBUG
+ /*#define STMMAC_DEBUG*/
+@@ -150,6 +151,8 @@ static void stmmac_exit_fs(void);
+ 
+ #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
+ 
++static int rkgmac_loopback_mode = 0;
++
+ /**
+  * stmmac_verify_args - verify the driver parameters.
+  * Description: it verifies if some wrong parameter is passed to the driver.
+@@ -697,6 +700,8 @@ static void stmmac_adjust_link(struct net_device *dev)
+ 	unsigned int fc = priv->flow_ctrl, pause_time = priv->pause;
+ 	struct bsp_priv *bsp_priv = priv->plat->bsp_priv;
+ 
++	if (rkgmac_loopback_mode == 1) return;
++
+ 	if (phydev == NULL)
+ 		return;
+ 
+@@ -844,20 +849,20 @@ static ssize_t set_phy_reg(struct device *dev,struct device_attribute *attr,
+ 
+ static ssize_t show_phy_regValue(struct device *dev,
+ 					struct device_attribute *attr, char *buf) {
+-	struct phy_device *phy_dev = dev_get_drvdata(dev);
++	struct stmmac_priv * priv = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 	int val;
+ #if 0
+-	val = phy_read(phy_dev, gPhyReg);
++	val = phy_read(priv->phydev, gPhyReg);
+ 	ret = snprintf(buf, PAGE_SIZE, "phy reg 0x%x = 0x%x\n", gPhyReg, val);
+ #else
+ 	int i=0;
+ 
+ 	for (i=0; i<32; i++) {
+-		printk("%d: 0x%x\n", i, phy_read(phy_dev, i));
++		printk("%d: 0x%x\n", i, phy_read(priv->phydev, i));
+ 	}
+ 
+-	val = phy_read(phy_dev, gPhyReg);
++	val = phy_read(priv->phydev, gPhyReg);
+ 	ret = snprintf(buf, PAGE_SIZE, "phy reg 0x%x = 0x%x\n", gPhyReg, val);
+ #endif
+ 	return ret;
+@@ -869,13 +874,97 @@ static ssize_t set_phy_regValue(struct device *dev,
+ 	int ovl;
+ 	int ret;
+ 
+-	struct phy_device *phy_dev = dev_get_drvdata(dev);
++	struct stmmac_priv * priv = dev_get_drvdata(dev);
+ 	ret = kstrtoint(buf, 0, &ovl);
+ 	printk("%s----reg 0x%x: ovl=0x%x\n", __FUNCTION__, gPhyReg, ovl);
+-	phy_write(phy_dev, gPhyReg, ovl);
++	phy_write(priv->phydev, gPhyReg, ovl);
+ 	return count;
+ }
+ 
++static int gLoopbackSpeed = 100;
++struct sk_buff * loopback_rx_skb;
++struct sk_buff * loopback_tx_skb;
++
++/*
++	delay_test:
++	0: run delay test with all tx/rx delayline values
++	1: run loopback using current tx/rx delayline value
++
++	type:
++	0: GMAC loopback
++	1: PHY loopback
++	2: RJ45 loopback
++*/
++#define LOOPBACK_TYPE_GMAC	0
++#define LOOPBACK_TYPE_PHY	1
++#define LOOPBACK_TYPE_RJ45	2
++int lb(struct stmmac_priv *priv, int delay_test, int type);
++
++static ssize_t show_phy_loopback(struct device *dev,
++					struct device_attribute *attr, char *buf) {
++	int ret;
++	struct stmmac_priv * priv = dev_get_drvdata(dev);
++
++	ret = lb(priv, 0, LOOPBACK_TYPE_PHY);
++
++	if (!ret)
++		ret = snprintf(buf, PAGE_SIZE, "PHY loopback: PASS\n");
++	else
++		ret = snprintf(buf, PAGE_SIZE, "PHY loopback: FAIL\n");
++
++	return ret;
++}
++
++static ssize_t show_rj45_loopback(struct device *dev,
++					struct device_attribute *attr, char *buf) {
++	int ret;
++	struct stmmac_priv * priv = dev_get_drvdata(dev);
++
++	ret = lb(priv, 0, LOOPBACK_TYPE_RJ45);
++
++	if (!ret)
++		ret = snprintf(buf, PAGE_SIZE, "RJ45 loopback: PASS\n");
++	else
++		ret = snprintf(buf, PAGE_SIZE, "RJ45 loopback: FAIL\n");
++
++	return ret;
++}
++
++static ssize_t show_loopback_speed(struct device *dev,
++					struct device_attribute *attr,
++					char *buf) {
++	int ret;
++
++
++	ret = snprintf(buf, PAGE_SIZE, "%d\n", gLoopbackSpeed);
++	return ret;
++}
++
++static ssize_t set_loopback_speed(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t count) {
++	int speed;
++	int ret;
++
++	ret = kstrtoint(buf, 0, &speed);
++	printk("%s: loopback speed set to %d\n", __FUNCTION__, speed);
++
++	gLoopbackSpeed = speed;
++ 	return count;
++ }
++
++static ssize_t show_delay_test(struct device *dev,
++					struct device_attribute *attr, char *buf) {
++	int ret;
++	struct stmmac_priv * priv = dev_get_drvdata(dev);
++
++	lb(priv, 1, LOOPBACK_TYPE_PHY);
++
++	ret = snprintf(buf, PAGE_SIZE, "done\n");
++
++	return ret;
++}
++
+ #ifdef CONFIG_ROCKCHIP_PHY
+ 
+ static struct phy_device *gphy_device;
+@@ -1080,9 +1169,13 @@ static struct device_attribute phy_reg_attrs[] = {
+ #ifdef CONFIG_ROCKCHIP_PHY
+ 	__ATTR(phy_param, 0200, NULL, rockchip_integrated_phy_set_phy_param),
+ #endif
++	__ATTR(loopback_speed, S_IRUGO | S_IWUSR, show_loopback_speed, set_loopback_speed),
++	__ATTR(phy_loopback, S_IRUGO, show_phy_loopback, NULL),
++	__ATTR(rj45_loopback, S_IRUGO, show_rj45_loopback, NULL),
++	__ATTR(delay_test, S_IRUGO, show_delay_test, NULL)
+ };
+ 
+-int gmac_create_sysfs(struct phy_device * phy_dev) {
++int gmac_create_sysfs(struct phy_device * phy_dev, struct stmmac_priv *priv) {
+ 	int r;
+ 	int t;
+ 
+@@ -1090,7 +1183,7 @@ int gmac_create_sysfs(struct phy_device * phy_dev) {
+ 	gphy_device = phy_dev;
+ #endif
+ 
+-	dev_set_drvdata(&phy_dev->dev, phy_dev);
++	dev_set_drvdata(&phy_dev->dev, priv);
+ 	for (t = 0; t < ARRAY_SIZE(phy_reg_attrs); t++) {
+ 		r = device_create_file(&phy_dev->dev,&phy_reg_attrs[t]);
+ 		if (r) {
+@@ -1223,7 +1316,7 @@ static int stmmac_init_phy(struct net_device *dev)
+ 
+ 	priv->phydev = phydev;
+ 
+-	gmac_create_sysfs(phydev);
++	gmac_create_sysfs(phydev, priv);
+ 
+ 	if ((bsp_priv->chip == RK322X_GMAC ||
+ 	     bsp_priv->chip == RK322XH_GMAC) &&
+@@ -1967,6 +2060,8 @@ static int stmmac_open(struct net_device *dev)
+ {
+ 	struct stmmac_priv *priv = netdev_priv(dev);
+ 	int ret;
++	
++	rkgmac_loopback_mode = 0;
+ 
+ 	if ((priv->plat) && (priv->plat->bsp_priv)) {
+ 		struct bsp_priv * bsp_priv = priv->plat->bsp_priv;
+@@ -2564,6 +2659,12 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit)
+ 				print_pkt(skb->data, frame_len);
+ 			}
+ #endif
++
++			if (rkgmac_loopback_mode == 1) {
++				memcpy(loopback_rx_skb->data, skb->data, frame_len);
++				loopback_rx_skb->len = frame_len;
++			}
++
+ 			skb->protocol = eth_type_trans(skb, priv->dev);
+ 
+ 			if (unlikely(!coe))
+@@ -3474,6 +3575,242 @@ err:
+ __setup("stmmaceth=", stmmac_cmdline_opt);
+ #endif /* MODULE */
+ 
++int rkgmac_setup_desc_rings(struct stmmac_priv * priv) 
++{
++	return 0;
++}
++ 
++int rkgmac_setup_loopback_test(struct stmmac_priv * priv) 
++{
++	return 0;
++} 
++
++void rkgmac_create_lbtest_frame(struct sk_buff *skb,
++                                      unsigned int frame_size)
++{
++	memset(skb->data, 0xFF, frame_size);
++	frame_size &= ~1;
++	memset(&skb->data[frame_size / 2], 0xAA, frame_size / 2 - 1);
++	memset(&skb->data[frame_size / 2 + 10], 0xBE, 1);
++	memset(&skb->data[frame_size / 2 + 12], 0xAF, 1);
++}
++
++int rkgmac_check_lbtest_frame(struct sk_buff *skb,
++                                    unsigned int frame_size)
++{
++	frame_size &= ~1;
++	if (*(skb->data + 3) == 0xFF)
++		if ((*(skb->data + frame_size / 2 + 10) == 0xBE) &&
++			(*(skb->data + frame_size / 2 + 12) == 0xAF))
++			return 0;
++	return 13;
++}
++
++void enable_phy_loopback(struct stmmac_priv * priv, int type)
++{
++	int val;
++	u32 ctrl;
++
++	rkgmac_loopback_mode = 1;
++
++	ctrl = readl(priv->ioaddr + MAC_CTRL_REG);
++	ctrl |= priv->hw->link.duplex;
++
++	if (gLoopbackSpeed == 1000)
++		ctrl &= ~priv->hw->link.port;
++	else
++		ctrl |= priv->hw->link.port;
++
++	writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
++
++	val = phy_read(priv->phydev, MII_BMCR);
++	//printk("MII_BMCR--1: 0x%x\n", val);
++
++	val &= ~(BMCR_ANENABLE);
++	if (type == LOOPBACK_TYPE_PHY)
++		val |= BMCR_LOOPBACK;
++	else
++		val &= (~BMCR_LOOPBACK);
++
++	if (gLoopbackSpeed == 1000) {
++		val |= BMCR_SPEED1000;
++	}
++	else if (gLoopbackSpeed == 100) {
++		val &= ~BMCR_SPEED1000;
++		val |= BMCR_SPEED100;
++	}
++	else if (gLoopbackSpeed == 10) {
++		val &= ~BMCR_SPEED1000;
++		val &= ~BMCR_SPEED100;
++	}
++
++	val |= BMCR_FULLDPLX;
++
++	phy_write(priv->phydev, MII_BMCR, val);
++
++	val = phy_read(priv->phydev, MII_BMCR);
++	//printk("MII_BMCR--2: 0x%x\n", val);
++
++	if (likely(priv->plat->fix_mac_speed))
++		priv->plat->fix_mac_speed(priv->plat->bsp_priv, /*1000*/gLoopbackSpeed);
++}
++
++void disable_phy_loopback(struct stmmac_priv *priv)
++{	
++	int val;
++	val = phy_read(priv->phydev, MII_BMCR);
++	val |= BMCR_ANENABLE;
++	val &= (~BMCR_LOOPBACK);
++	phy_write(priv->phydev, MII_BMCR, val);
++
++	val = phy_read(priv->phydev, MII_BMCR);
++	//printk("MII_BMCR--3: 0x%x\n", val);
++}
++
++int rkgmac_run_loopback_test(struct stmmac_priv * priv, unsigned int skb_size) 
++{
++	struct sk_buff *tx_skb;
++	struct net_device *ndev = priv->dev;
++	int i;
++	int ret;
++
++        //disable_irq(ndev->irq);
++
++	netif_device_detach(ndev);
++	netif_stop_queue(ndev);
++	napi_disable(&priv->napi);
++
++	tx_skb = alloc_skb(skb_size, GFP_KERNEL);
++	if (!tx_skb) {
++		printk("%s: tx_skb alloc_skb failed\n", __FUNCTION__);
++	}
++
++	memcpy(tx_skb->data, loopback_tx_skb->data, loopback_tx_skb->len);
++	//tx_skb->len = loopback_tx_skb->len;
++
++	skb_put(tx_skb, skb_size);
++
++	stmmac_tx_clean(priv);
++	stmmac_xmit(tx_skb, priv->dev);
++
++	if (gLoopbackSpeed == 1000)
++		udelay(20);
++	else if (gLoopbackSpeed == 100)
++		udelay(200);
++	else
++		udelay(2000);
++
++	stmmac_rx(priv, 64);
++
++	for (i=0; i<skb_size; i++) {
++		if (loopback_tx_skb->data[i] != loopback_rx_skb->data[i]) {
++			//printk("TX[%d]=0x%x\n", i, loopback_tx_skb->data[i]);
++			//printk("RX[%d]=0x%x\n", i, loopback_rx_skb->data[i]);
++			break;
++		}
++	}
++
++	if (i < skb_size) {
++		ret = -1;
++	} else {
++		ret = 0;
++	}
++
++	netif_device_attach(ndev);
++	netif_start_queue(ndev);
++	napi_enable(&priv->napi);
++        //enable_irq(ndev->irq);
++
++	//kfree_skb(tx_skb);
++	return ret;
++}
++
++static void find_result(int tx, int rx, int fail) {
++	static int tx_sum = 0;
++	static int rx_sum = 0;    
++	static int count_sum = 0;
++
++	if (!fail) {
++		tx_sum += tx;
++		rx_sum += rx;
++		count_sum ++;
++	}
++	
++	if (tx == 0x7F && rx == 0x7F) {
++		int tx_delay, rx_delay;
++		
++		tx_delay = tx_sum / count_sum;
++		rx_delay = rx_sum / count_sum;
++		printk("\n\nfind tx_delay = 0x%02x, rx_delay = 0x%02x\n\n\n",
++					tx_delay, rx_delay);
++		tx_sum = 0;
++		rx_sum = 0;
++		count_sum = 0;
++	}
++}
++
++extern void SET_RGMII(struct bsp_priv *bsp_priv, int type, int tx_delay, int rx_delay);
++int lb(struct stmmac_priv *priv, int delay_test, int type)
++{
++	int ret = 0;
++	int skb_size = 1024;
++
++	printk("%s: %d Mbps loopback from PHY\n", __FUNCTION__, gLoopbackSpeed);
++
++	enable_phy_loopback(priv, type);
++	loopback_rx_skb = alloc_skb(skb_size, GFP_KERNEL);
++	if (!loopback_rx_skb) {
++		printk("%s: loopback_rx_skb alloc_skb failed\n", __FUNCTION__);
++	}
++
++	loopback_tx_skb = alloc_skb(skb_size, GFP_KERNEL);
++	if (!loopback_tx_skb) {
++		printk("%s: loopback_tx_skb alloc_skb failed\n", __FUNCTION__);
++	}
++
++	rkgmac_create_lbtest_frame(loopback_tx_skb, skb_size);
++	skb_put(loopback_tx_skb, skb_size);
++
++	msleep(100);
++
++	if (delay_test) {
++		int tx_delay = 0;
++		int rx_delay = 0;
++		//u32 ctrl;
++		struct bsp_priv * bsp_priv = priv->plat->bsp_priv;
++
++		for (tx_delay = 0x0; tx_delay <= 0x7F; tx_delay++ ) {
++			printk("TX(0x%x): ", tx_delay);
++			for (rx_delay = 0x0; rx_delay <= 0x7F; rx_delay++ ) {
++				memset(loopback_rx_skb->data, 0, skb_size);
++				loopback_rx_skb->len = 0;
++
++				//ctrl = (0xffff << 16) | (rx_delay << 7) | tx_delay;
++				//regmap_write(bsp_priv->grf, 0x0900, ctrl);
++				SET_RGMII(bsp_priv, bsp_priv->chip, tx_delay, rx_delay);
++
++				ret = rkgmac_run_loopback_test(priv, skb_size);
++				if (!ret) printk("O");
++				else printk(" ");
++				find_result(tx_delay, rx_delay, ret);					
++				udelay(20);
++			}
++			printk("\n");
++		}
++		ret = 0;
++	} else {
++		memset(loopback_rx_skb->data, 0, skb_size);
++		loopback_rx_skb->len = 0;
++		ret = rkgmac_run_loopback_test(priv, skb_size);
++	}
++
++	kfree(loopback_rx_skb);
++	kfree(loopback_tx_skb);
++
++	rkgmac_loopback_mode = 0;
++	return ret;
++}
++
+ MODULE_DESCRIPTION("STMMAC 10/100/1000 Ethernet device driver");
+ MODULE_AUTHOR("Giuseppe Cavallaro <peppe.cavallaro@st.com>");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c b/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
+old mode 100644
+new mode 100755
+index 85fcf0d..4387cc9
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
+@@ -147,13 +147,13 @@ static u64 gmac_dmamask = DMA_BIT_MASK(32);
+ #define RV1108_GMAC_RMII_CLK_25M	GRF_BIT(7)
+ #define RV1108_GMAC_RMII_CLK_2_5M	GRF_CLR_BIT(7)
+ 
+-static void SET_RGMII(struct bsp_priv *bsp_priv, int type,
++void SET_RGMII(struct bsp_priv *bsp_priv, int type,
+ 		      int tx_delay, int rx_delay)
+ {
+ 	struct device *dev = &bsp_priv->pdev->dev;
+ 	u32 val;
+ 
+-	pr_info("tx delay=0x%x\nrx delay=0x%x\n", tx_delay, rx_delay);
++	//pr_info("tx delay=0x%x\nrx delay=0x%x\n", tx_delay, rx_delay);
+ 
+ 	switch (type) {
+ 	case RK3288_GMAC:
+@@ -163,7 +163,7 @@ static void SET_RGMII(struct bsp_priv *bsp_priv, int type,
+ 		grf_writel(GMAC_TXCLK_DLY_ENABLE, RK3288_GRF_SOC_CON3);
+ 		grf_writel(GMAC_CLK_RX_DL_CFG(rx_delay), RK3288_GRF_SOC_CON3);
+ 		grf_writel(GMAC_CLK_TX_DL_CFG(tx_delay), RK3288_GRF_SOC_CON3);
+-		pr_info("tx delay=0x%x\nrx delay=0x%x\n", tx_delay, rx_delay);
++		//pr_info("tx delay=0x%x\nrx delay=0x%x\n", tx_delay, rx_delay);
+ 		break;
+ 	case RK312X_GMAC:
+ 		grf_writel(GMAC_PHY_INTF_SEL_RGMII, RK312X_GRF_MAC_CON1);
+@@ -172,7 +172,7 @@ static void SET_RGMII(struct bsp_priv *bsp_priv, int type,
+ 		grf_writel(GMAC_TXCLK_DLY_ENABLE, RK312X_GRF_MAC_CON0);
+ 		grf_writel(GMAC_CLK_RX_DL_CFG(rx_delay), RK312X_GRF_MAC_CON0);
+ 		grf_writel(GMAC_CLK_TX_DL_CFG(tx_delay), RK312X_GRF_MAC_CON0);
+-		pr_info("tx delay=0x%x\nrx delay=0x%x\n", tx_delay, rx_delay);
++		//pr_info("tx delay=0x%x\nrx delay=0x%x\n", tx_delay, rx_delay);
+ 		break;
+ 	case RK3368_GMAC:
+ 		if (IS_ERR(bsp_priv->grf)) {
