@@ -1,7 +1,7 @@
 ethtool -s eth0 speed 100 duplex full autoneg off
 
 
---------------80211------------------
+--------------rtl8211------------------
 
 phy   mac
 
@@ -43,7 +43,7 @@ GPIO - phy rst
  
  注意每根线都得连上，少连一根都会找不到phy设备，还有rst也要看看有没有使能，如果吞吐有问题再调tx rx delay
  
- ---------------8720A---------------------
+ ---------------lan8720A---------------------
  
  LED1_AD1 接下拉的时候 INTB才会输出CLK(接25M晶振，内部倍频 INTB输出50M) 
 
@@ -82,7 +82,7 @@ rx1 - rx1
 
 rxdv-rxdv
 
-+ rxer-rxer
+rxer-rxer
 
 mdio-mdio
 
