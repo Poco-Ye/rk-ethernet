@@ -1,0 +1,68 @@
+diff --git a/kernel/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/kernel/drivers/net/ethernet//stmicro/stmmac/stmmac_main.c
+index ad0003a..989c9fb 100755
+--- a/kernel/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/kernel/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -149,6 +149,8 @@ static void stmmac_exit_fs(void);
+ 
+ #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
+ 
++static int phy_disable_eee(struct phy_device *phydev);
++
+ /**
+  * stmmac_verify_args - verify the driver parameters.
+  * Description: it verifies if some wrong parameter is passed to the driver.
+@@ -945,6 +947,8 @@ static int stmmac_init_phy(struct net_device *dev)
+ 		 " Link = %d\n", dev->name, phydev->phy_id, phydev->link);
+ 
+ 	priv->phydev = phydev;
++	
++	phy_disable_eee(phydev);
+ 
+ 	gmac_create_sysfs(phydev);
+ 
+@@ -2748,6 +2752,24 @@ static int stmmac_hw_init(struct stmmac_priv *priv)
+ 	return 0;
+ }
+ 
++static int phy_disable_eee(struct phy_device *phydev)
++{
++	if (phydev->phy_id == 0x001cc816) { // rtl8201
++		printk("%s in\n", __func__);
++		phy_write(phydev, 31, 0x0004);
++		mdelay(10);
++		phy_write(phydev, 16, 0x4077);
++		phy_write(phydev, 31, 0x0000);
++		phy_write(phydev, 13, 0x0007);
++		phy_write(phydev, 14, 0x003C);
++		phy_write(phydev, 13, 0x4007);
++		phy_write(phydev, 14, 0x0000);
++		phy_write(phydev, 0, 0x1200);
++	} else if (phydev->phy_id == 0x001cc915) { // rtl8211e
++		printk("%s in\n", __func__);
++		phy_write(phydev, 31, 0x0000);
++		phy_write(phydev,  0, 0x8000);
++		mdelay(20);
++		phy_write(phydev, 31, 0x0a4b);
++		phy_write(phydev, 17, 0x1110);
++		phy_write(phydev, 31, 0x0000);
++		phy_write(phydev, 13, 0x0007);
++		phy_write(phydev, 14, 0x003c);
++		phy_write(phydev, 13, 0x4007);
++		phy_write(phydev, 14, 0x0000);
++	}
++
++	return 0;
++}
++
+ /**
+  * stmmac_dvr_probe
+  * @device: device pointer
+@@ -3012,6 +3034,8 @@ int stmmac_resume(struct net_device *ndev)
+ 
+ 	if (priv->phydev)
+ 		phy_start(priv->phydev);
++		
++	phy_disable_eee(priv->phydev);
+ 
+ 	return 0;
+ }
