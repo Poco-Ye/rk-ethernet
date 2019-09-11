@@ -1,0 +1,410 @@
+diff --git a/arch/arm/mach-rk30/board-rk31-sdk-vmac.c b/arch/arm/mach-rk30/board-rk31-sdk-vmac.c
+index 12f342b..58bcf2d 100644
+--- a/arch/arm/mach-rk30/board-rk31-sdk-vmac.c
++++ b/arch/arm/mach-rk30/board-rk31-sdk-vmac.c
+@@ -1,6 +1,8 @@
+ #define grf_readl(offset)	readl_relaxed(RK30_GRF_BASE + offset)
+ #define grf_writel(v, offset)	do { writel_relaxed(v, RK30_GRF_BASE + offset); dsb(); } while (0)
+ 
++#define PHY_WOL_IRQ_IO GPIO1_A6
++
+ static int rk30_vmac_register_set(void)
+ {
+ 	//config rk30 vmac as rmii
+@@ -114,4 +116,5 @@ struct rk29_vmac_platform_data board_vmac_data = {
+ 	.rmii_io_deinit = rk30_rmii_io_deinit,
+ 	.rmii_power_control = rk30_rmii_power_control,
+ 	.rmii_speed_switch = rk29_vmac_speed_switch,
++	.wolirq_io         = PHY_WOL_IRQ_IO,
+ };
+diff --git a/arch/arm/plat-rk/include/plat/board.h b/arch/arm/plat-rk/include/plat/board.h
+index 1fc2d83..e3fc975 100644
+--- a/arch/arm/plat-rk/include/plat/board.h
++++ b/arch/arm/plat-rk/include/plat/board.h
+@@ -275,6 +275,7 @@ struct rk29_vmac_platform_data {
+ 	int (*rmii_io_deinit)(void);
+ 	int (*rmii_power_control)(int enable);
+         int(*rmii_speed_switch)(int speed);
++	int wolirq_io;
+ };
+ /* adc battery */
+ #define LCDC_ON 0x0001
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+old mode 100644
+new mode 100755
+index ff109fe..8a6a013
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -14,6 +14,7 @@
+  * option) any later version.
+  *
+  */
++
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/errno.h>
+@@ -35,6 +36,7 @@
+ #include <asm/irq.h>
+ #include <asm/uaccess.h>
+ 
++
+ MODULE_DESCRIPTION("PHY library");
+ MODULE_AUTHOR("Andy Fleming");
+ MODULE_LICENSE("GPL");
+@@ -882,14 +884,197 @@ static int genphy_config_init(struct phy_device *phydev)
+ 
+ 	return 0;
+ }
++
++
++//add by chunqiao
++
++static int gPhyReg;
++
++static ssize_t show_phy_reg(struct device *dev,
++				struct device_attribute *attr, char *buf) {
++	int ret = snprintf(buf, PAGE_SIZE, "current phy reg = 0x%x\n", gPhyReg);
++	return ret;
++}
++
++static ssize_t set_phy_reg(struct device *dev,struct device_attribute *attr,
++				const char *buf, size_t count) {
++	int ovl;
++	int r = kstrtoint(buf, 0, &ovl);
++	if (r) printk("kstrtoint failed\n");
++	gPhyReg = ovl;
++	printk("%s----ovl=0x%x\n", __FUNCTION__, ovl);
++	return count;
++}
++
++static ssize_t show_phy_regValue(struct device *dev,
++					struct device_attribute *attr, char *buf) {
++	struct phy_device *phy_dev = dev_get_drvdata(dev);
++	int ret = 0;
++	int val;
++#if 0
++	val = phy_read(phy_dev, gPhyReg);
++	ret = snprintf(buf, PAGE_SIZE, "phy reg 0x%x = 0x%x\n", gPhyReg, val);
++#else
++	int i=0;
++
++	for (i=0; i<32; i++) {
++		printk("%d: 0x%x\n", i, phy_read(phy_dev, i));
++	}
++
++	val = phy_read(phy_dev, gPhyReg);
++	ret = snprintf(buf, PAGE_SIZE, "phy reg 0x%x = 0x%x\n", gPhyReg, val);
++#endif
++	return ret;
++}
++
++static ssize_t set_phy_regValue(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t count) {
++	int ovl;
++	int ret;
++
++	struct phy_device *phy_dev = dev_get_drvdata(dev);
++	ret = kstrtoint(buf, 0, &ovl);
++	printk("%s----reg 0x%x: ovl=0x%x\n", __FUNCTION__, gPhyReg, ovl);
++	phy_write(phy_dev, gPhyReg, ovl);
++	return count;
++}
++
++static struct device_attribute phy_reg_attrs[] = {
++	__ATTR(phy_reg, S_IRUGO | S_IWUSR, show_phy_reg, set_phy_reg),
++	__ATTR(phy_regValue, S_IRUGO | S_IWUSR, show_phy_regValue, set_phy_regValue)
++};
++
++
++int phy_create_sysfs(struct phy_device * phy_dev) {
++	int r;
++	int t;
++
++	dev_set_drvdata(&phy_dev->dev, phy_dev);
++	for (t = 0; t < ARRAY_SIZE(phy_reg_attrs); t++) {
++		r = device_create_file(&phy_dev->dev,&phy_reg_attrs[t]);
++		if (r) {
++			dev_err(&phy_dev->dev, "failed to create sysfs file\n");
++			return r;
++		}
++	}
++
++	return 0;
++}
++
++int phy_remove_sysfs(struct phy_device * phy_dev) {
++	int t;
++
++	for (t = 0; t < ARRAY_SIZE(phy_reg_attrs); t++) {
++		device_remove_file(&phy_dev->dev,&phy_reg_attrs[t]);
++	}
++
++	return 0;
++}
++
++
++#define RTL8201F_PHY_ID 0x001cc816 
++#define RTL8221F_PHY_ID 0x001cc912
++
++int rtl8201f_wol_enable(struct phy_device *phydev)
++{
++	
++	printk("%s phy_id=0x%08x\n",__func__,phydev->phy_id);
++	  
++
++	 //PMEB PIN function selection
++     phy_write(phydev, 0x1f, 0x0007);
++     phy_write(phydev, 0x13, 0xC434);
++	 
++	 //set MAC address
++	 phy_write(phydev, 0x1f, 0x0012);
++    phy_write(phydev, 0x10, 0x2210);
++    phy_write(phydev, 0x11, 0x2221);
++    phy_write(phydev, 0x12, 0x2423);
++		
++		
++	//set max packet length
++    phy_write(phydev, 0x1f, 0x0011);
++    phy_write(phydev, 0x11, 0x1fff);
++	
++	
++	//WOL event select and enable
++     phy_write(phydev, 0x10, 0x1000);
++	 
++	 
++	 //wake up frame selection and enable
++      phy_write(phydev, 0x1f, 0x0008);
++      phy_write(phydev, 0x10, 0x3000);
++      phy_write(phydev, 0x11, 0x0020);
++      phy_write(phydev, 0x12, 0x03c0);
++
++	//Wake—up frame CRC
++     phy_write(phydev, 0x1f, 0x0010);
++	 phy_write(phydev, 0x10, 0xdf6b);
++	
++	//RMII TX isolate enable
++     phy_write(phydev, 0x1f, 0x0007);
++	 phy_write(phydev, 0x14, 0xb0d5);
++	
++	//RMII RX isolate enable
++	phy_write(phydev, 0x1f, 0x0011);
++	phy_write(phydev, 0x13, 0x8003);
++	 
++	return 0;
++	
++}
++
++
++int rtl8201f_wol_disable(struct phy_device *phydev)
++{
++	
++	printk("%s phy_id=0x%08x\n",__func__,phydev->phy_id);
++	
++	      
++	  //disable PMEB PIN function selection
++       phy_write(phydev, 0x1f, 0x0007);
++       phy_write(phydev, 0x19, 0x4434);
++		 
++	  //disable PMEB PIN function selection
++       phy_write(phydev, 0x1f, 0x0007);
++       phy_write(phydev, 0x13, 0x4434);
++	  
++	   
++	   //disable ALL wol Event
++	   phy_write(phydev, 0x1f, 0x0011);
++       phy_write(phydev, 0x10, 0x0000);
++	 
++	   
++	   //clear MII/RMII TX Isolate
++       phy_write(phydev, 0x1f, 0x0007);
++       phy_write(phydev, 0x14, 0x30d5);
++	  
++	   
++	   //clear MII/RMII RX Isolate
++      phy_write(phydev, 0x1f, 0x0011);
++      phy_write(phydev, 0x13, 0x0002);
++	 
++	  
++	  //WOL reset 
++     phy_write(phydev, 0x1f, 0x0011);
++     phy_write(phydev, 0x11, 0x9fff);
++	 
++	return 0;
++	
++}
++
+ int genphy_suspend(struct phy_device *phydev)
+ {
+-	int value;
++	//int value;
+ 
+ 	mutex_lock(&phydev->lock);
+ 
+-	value = phy_read(phydev, MII_BMCR);
+-	phy_write(phydev, MII_BMCR, (value | BMCR_PDOWN));
++	//must keep link up when wol enable
++	//value = phy_read(phydev, MII_BMCR);
++	//phy_write(phydev, MII_BMCR, (value | BMCR_PDOWN));
++	
++	if(phydev->phy_id==RTL8201F_PHY_ID)
++	  rtl8201f_wol_enable(phydev);
+ 
+ 	mutex_unlock(&phydev->lock);
+ 
+@@ -897,11 +1082,15 @@ int genphy_suspend(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(genphy_suspend);
+ 
++
+ int genphy_resume(struct phy_device *phydev)
+ {
+ 	int value;
+-
++	
+ 	mutex_lock(&phydev->lock);
++	
++	if(phydev->phy_id==RTL8201F_PHY_ID)
++	  rtl8201f_wol_disable(phydev);
+ 
+ 	value = phy_read(phydev, MII_BMCR);
+ 	phy_write(phydev, MII_BMCR, (value & ~BMCR_PDOWN));
+@@ -953,6 +1142,9 @@ static int phy_probe(struct device *dev)
+ 	if (phydev->drv->probe)
+ 		err = phydev->drv->probe(phydev);
+ 
++	//cat sys/devices/0:00/phy_regValue
++	phy_create_sysfs(phydev);
++
+ 	mutex_unlock(&phydev->lock);
+ 
+ 	return err;
+@@ -971,6 +1163,10 @@ static int phy_remove(struct device *dev)
+ 
+ 	if (phydev->drv->remove)
+ 		phydev->drv->remove(phydev);
++ 
++
++	//cat sys/devices/0:00/phy_regValue
++	 phy_remove_sysfs(phydev);
+ 
+ 	put_driver(dev->driver);
+ 	phydev->drv = NULL;
+@@ -1028,7 +1224,7 @@ static struct phy_driver genphy_driver = {
+ static int __init phy_init(void)
+ {
+ 	int rc;
+-
++	printk("jobs %s\n",__func__);
+ 	rc = mdio_bus_init();
+ 	if (rc)
+ 		return rc;
+diff --git a/drivers/net/rk29_vmac.c b/drivers/net/rk29_vmac.c
+old mode 100644
+new mode 100755
+index 39e0e15..4bd9f17
+--- a/drivers/net/rk29_vmac.c
++++ b/drivers/net/rk29_vmac.c
+@@ -1049,6 +1049,19 @@ static int vmac_register_print(struct net_device *dev)
+ }
+ #endif
+ 
+
++extern void rk28_send_wakeup_key(void);
++static irqreturn_t wol_io_isr(int irq, void *dev_id)
++{
++	printk("===========%s\n", __func__);
++	rk28_send_wakeup_key();
++	return IRQ_HANDLED;
++}
+
+ int vmac_open(struct net_device *dev)
+ {
+ 	struct vmac_priv *ap = netdev_priv(dev);
+@@ -1162,6 +1175,40 @@ int vmac_open(struct net_device *dev)
+ 	phydev = ap->phy_dev;
+ 	dev_info(&ap->pdev->dev, "PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
+ 	       phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
+
++int irq;
++if (pdata->wolirq_io > 0) {
++err = gpio_request(pdata->wolirq_io, "gmac_wol_io");
++if (err < 0) {
++	printk("gmac_wolirq: failed to request GPIO %d,"
++		" error %d\n", pdata->wolirq_io, err);
++} else {
++	err = gpio_direction_input(pdata->wolirq_io);
++	if (err < 0) {
++		pr_err("gmac_wolirq: failed to configure input"
++			" direction for GPIO %d, error %d\n",
++		pdata->wolirq_io, err);
++		gpio_free(pdata->wolirq_io);
++	} else {
++		irq = gpio_to_irq(pdata->wolirq_io);
++		if (irq < 0) {
++			err = irq;
++			pr_err("gpio-keys: Unable to get irq number for GPIO %d, error %d\n", pdata->wolirq_io, err);
++			gpio_free(pdata->wolirq_io);
++		} else {
++			err = request_irq(irq, wol_io_isr, IRQF_TRIGGER_FALLING , "gmac_wol_io_irq", NULL);
++			if (err)
++				pr_err("request wol io irq fail");
++			else
++				disable_irq(pdata->wolirq_io);
++				enable_irq_wake(irq);
++		}
++	}
++}
++}
+
+ 
+ 	ap->suspending = 0;
+ 	ap->open_flag = 1;
+@@ -1252,7 +1299,9 @@ int vmac_close(struct net_device *dev)
+ 	clk_disable(clk_get(NULL,"mii_tx"));
+ 	clk_disable(clk_get(NULL,"hclk_mac"));
+ 	clk_disable(clk_get(NULL,"mac_ref"));
+
++	gpio_free(pdata->wolirq_io);
+
+ 	return 0;
+ }
+ 
+@@ -1737,7 +1786,8 @@ rk29_vmac_suspend(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct net_device *ndev = platform_get_drvdata(pdev);
+ 	struct vmac_priv *ap = netdev_priv(ndev);
+-	
++	struct rk29_vmac_platform_data *pdata = ap->pdev->dev.platform_data;	
++
+ 	if (ndev) {
+ 		if (ap->open_flag == 1) {
+ 			netif_stop_queue(ndev);
+@@ -1750,6 +1800,7 @@ rk29_vmac_suspend(struct device *dev)
+ 				ap->suspending = 1;
+ 			}
+ 		}
++	enable_irq(pdata->wolirq_io);
+ 	}
+ 	return 0;
+ }
+@@ -1760,7 +1811,8 @@ rk29_vmac_resume(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct net_device *ndev = platform_get_drvdata(pdev);
+ 	struct vmac_priv *ap = netdev_priv(ndev);
+-	
++	struct rk29_vmac_platform_data *pdata = ap->pdev->dev.platform_data;	
++
+ 	if (ndev) {
+ 		if (ap->open_flag == 1) {
+ 			netif_device_attach(ndev);
+@@ -1769,6 +1821,8 @@ rk29_vmac_resume(struct device *dev)
+          ap->suspending = 0;
+ 			}
+ 		}
++	
++	disable_irq(pdata->wolirq_io);
+ 	}
+ 	return 0;
+ }
+

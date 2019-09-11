@@ -1,0 +1,77 @@
+1、打上下面补丁，自行修改IP信息
+
+/rk3288_rel_5.1/frameworks/opt/net/ethernet$ git diff
+diff --git a/java/com/android/server/ethernet/EthernetServiceImpl.java b/java/com/android/server/ethernet/EthernetServiceImpl.java
+index bf4ab8e..ab7b334 100644
+--- a/java/com/android/server/ethernet/EthernetServiceImpl.java
++++ b/java/com/android/server/ethernet/EthernetServiceImpl.java
+@@ -23,11 +23,17 @@ import android.net.IEthernetServiceListener;
+ import android.net.IpConfiguration;
+ import android.net.IpConfiguration.IpAssignment;
+ import android.net.IpConfiguration.ProxySettings;
++import java.net.InetAddress;
++import java.net.Inet4Address;
++import android.net.LinkAddress;
++import android.net.NetworkUtils;
++import android.net.StaticIpConfiguration;
+ import android.os.Binder;
+ import android.os.Handler;
+ import android.os.HandlerThread;
+ import android.os.RemoteCallbackList;
+ import android.os.RemoteException;
++import android.os.SystemProperties;
+ import android.util.Log;
+ import android.util.PrintWriterPrinter;
+ 
+@@ -49,6 +55,7 @@ public class EthernetServiceImpl extends IEthernetManager.Stub {
+ 
+     private final Context mContext;
+     private final EthernetConfigStore mEthernetConfigStore;
++    private final StaticIpConfiguration mStaticIpConfiguration;
+     private final AtomicBoolean mStarted = new AtomicBoolean(false);
+     private IpConfiguration mIpConfiguration;
+ 
+@@ -61,7 +68,28 @@ public class EthernetServiceImpl extends IEthernetManager.Stub {
+         mContext = context;
+         Log.i(TAG, "Creating EthernetConfigStore");
+         mEthernetConfigStore = new EthernetConfigStore();
+-        mIpConfiguration = mEthernetConfigStore.readIpAndProxyConfigurations();
++        mStaticIpConfiguration = new StaticIpConfiguration();
++        if (SystemProperties.get("persist.sys.static.enable","1").equals("1")){                             //静态控制
++                String mIpAddress = "192.168.1.100";
++                int mNetmask = 24;
++                String mGateway = "192.168.1.1";
++                String mDns1 = "192.168.1.1";
++                String mDns2 = "8.8.8.8";
++
++                Inet4Address inetAddr = getIPv4Address(mIpAddress);
++                int prefixLength = mNetmask;
++                InetAddress gatewayAddr =getIPv4Address(mGateway); 
++                InetAddress dnsAddr = getIPv4Address(mDns1);
++                
++                mStaticIpConfiguration.ipAddress = new LinkAddress(inetAddr, prefixLength);
++                mStaticIpConfiguration.gateway=gatewayAddr;
++                mStaticIpConfiguration.dnsServers.add(dnsAddr);
++                mStaticIpConfiguration.dnsServers.add(getIPv4Address(mDns2));
++                mIpConfiguration = new IpConfiguration(IpAssignment.STATIC, ProxySettings.NONE,mStaticIpConfiguration,null);
++                mEthernetConfigStore.writeIpAndProxyConfigurations(mIpConfiguration);
++                SystemProperties.set("persist.sys.static.enable","0");                                         //首次开机用静态，若要写死每次开机都是静态，可以将此句屏蔽掉  
++        } else {
++                mIpConfiguration = mEthernetConfigStore.readIpAndProxyConfigurations();
++        }
+ 
+         Log.i(TAG, "Read stored IP configuration: " + mIpConfiguration);
+ 
+@@ -221,4 +249,12 @@ public class EthernetServiceImpl extends IEthernetManager.Stub {
+         mHandler.dump(new PrintWriterPrinter(pw), "EthernetServiceImpl");
+         pw.decreaseIndent();
+     }
++    
++    private Inet4Address getIPv4Address(String text) {
++        try {
++                return (Inet4Address) NetworkUtils.numericToInetAddress(text);
++        } catch (IllegalArgumentException|ClassCastException e) {
++                return null;
++        }
++   }
+ }

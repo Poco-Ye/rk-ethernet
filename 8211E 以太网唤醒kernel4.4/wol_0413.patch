@@ -1,0 +1,334 @@
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-box-808-android-6.0.dts b/arch/arm64/boot/dts/rockchip/rk3399-box-808-android-6.0.dts
+index 9c6e57c..c30830a 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-box-808-android-6.0.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3399-box-808-android-6.0.dts
+@@ -719,6 +719,7 @@
+ 	snps,reset-delays-us = <0 10000 50000>;
+ 	assigned-clocks = <&cru SCLK_RMII_SRC>;
+ 	assigned-clock-parents = <&clkin_gmac>;
++	wolirq-gpio = <&gpio3 16 GPIO_ACTIVE_LOW>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&rgmii_pins>;
+ 	tx_delay = <0x28>;
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi
+index be7c60b..d15b088 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi
+@@ -315,7 +315,7 @@
+ 				regulator-boot-on;
+ 				regulator-name = "vcc3v3_s0";
+ 				regulator-state-mem {
+-					regulator-off-in-suspend;
++					regulator-on-in-suspend;
+ 				};
+ 			};
+ 		};
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-evb.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-evb.dtsi
+index 028a217..0d20600 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-evb.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-evb.dtsi
+@@ -498,6 +498,7 @@
+ 	snps,reset-delays-us = <0 10000 50000>;
+ 	assigned-clocks = <&cru SCLK_RMII_SRC>;
+ 	assigned-clock-parents = <&clkin_gmac>;
++	wolirq-gpio = <&gpio3 16 GPIO_ACTIVE_LOW>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&rgmii_pins>;
+ 	tx_delay = <0x28>;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 9c2daa8..63fb434 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -53,6 +53,8 @@
+ #include "stmmac.h"
+ #include <linux/reset.h>
+ #include <linux/of_mdio.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
+ 
+ #define STMMAC_ALIGN(x)	L1_CACHE_ALIGN(x)
+ 
+@@ -1777,6 +1779,15 @@ static int stmmac_hw_setup(struct net_device *dev, bool init_ptp)
+ 	return 0;
+ }
+ 
++static irqreturn_t wol_io_isr(int irq, void *dev_id)
++{
++	struct net_device *dev = (struct net_device *)dev_id;
++	struct stmmac_priv *priv = netdev_priv(dev);
++
++	wake_lock_timeout(&priv->plat->wol_wake_lock, msecs_to_jiffies(8000));
++	return IRQ_HANDLED;
++}
++
+ /**
+  *  stmmac_open - open entry point of the driver
+  *  @dev : pointer to the device structure.
+@@ -1866,6 +1877,26 @@ static int stmmac_open(struct net_device *dev)
+ 		}
+ 	}
+ 
++	if (priv->plat->wolirq_io > 0) {
++		ret = devm_gpio_request(priv->device, priv->plat->wolirq_io, "gmac_wol_io");
++		if (ret) {
++			pr_err("%s: ERROR: failed to request WOL GPIO %d, err: %d\n",
++				   __func__, priv->plat->wolirq_io, ret);
++			goto lpiirq_error;
++		}
++
++		priv->plat->wol_irq = gpio_to_irq(priv->plat->wolirq_io);
++		ret = devm_request_irq(priv->device, priv->plat->wol_irq, wol_io_isr,
++			IRQF_TRIGGER_FALLING, "gmac_wol_io_irq", dev);
++		if (ret) {
++			pr_err("%s: ERROR: request wol io irq fail: %d", __func__, ret);
++			devm_gpio_free(priv->device, priv->plat->wolirq_io);
++			goto lpiirq_error;
++		}
++		disable_irq(priv->plat->wol_irq);
++		enable_irq_wake(priv->plat->wol_irq);
++	}
++
+ 	napi_enable(&priv->napi);
+ 	netif_start_queue(dev);
+ 
+@@ -1919,6 +1950,12 @@ static int stmmac_release(struct net_device *dev)
+ 	if (priv->lpi_irq > 0)
+ 		free_irq(priv->lpi_irq, dev);
+ 
++	if (priv->plat->wol_irq > 0)
++		devm_free_irq(priv->device, priv->plat->wol_irq, dev);
++
++	if (priv->plat->wolirq_io > 0)
++		devm_gpio_free(priv->device, priv->plat->wolirq_io);
++
+ 	/* Stop TX/RX DMA and clear the descriptors */
+ 	priv->hw->dma->stop_tx(priv->ioaddr);
+ 	priv->hw->dma->stop_rx(priv->ioaddr);
+@@ -2975,6 +3012,8 @@ int stmmac_dvr_probe(struct device *device,
+ 		goto error_netdev_register;
+ 	}
+ 
++	wake_lock_init(&priv->plat->wol_wake_lock, WAKE_LOCK_SUSPEND, "wol_wake_lock");
++
+ 	return ret;
+ 
+ error_netdev_register:
+@@ -3038,6 +3077,8 @@ int stmmac_suspend(struct net_device *ndev)
+ 	struct stmmac_priv *priv = netdev_priv(ndev);
+ 	unsigned long flags;
+ 
++	enable_irq(priv->plat->wol_irq);
++
+ 	if (!ndev || !netif_running(ndev))
+ 		return 0;
+ 
+@@ -3071,6 +3112,7 @@ int stmmac_suspend(struct net_device *ndev)
+ 	priv->oldlink = 0;
+ 	priv->speed = 0;
+ 	priv->oldduplex = -1;
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(stmmac_suspend);
+@@ -3086,6 +3128,8 @@ int stmmac_resume(struct net_device *ndev)
+ 	struct stmmac_priv *priv = netdev_priv(ndev);
+ 	unsigned long flags;
+ 
++	disable_irq(priv->plat->wol_irq);
++
+ 	if (!netif_running(ndev))
+ 		return 0;
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index d02691b..c505355 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -29,6 +29,7 @@
+ #include <linux/of_net.h>
+ #include <linux/of_device.h>
+ #include <linux/of_mdio.h>
++#include <linux/of_gpio.h>
+ 
+ #include "stmmac.h"
+ #include "stmmac_platform.h"
+@@ -110,6 +111,7 @@ stmmac_probe_config_dt(struct platform_device *pdev, const char **mac)
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct plat_stmmacenet_data *plat;
+ 	struct stmmac_dma_cfg *dma_cfg;
++	enum of_gpio_flags flags;
+ 
+ 	plat = devm_kzalloc(&pdev->dev, sizeof(*plat), GFP_KERNEL);
+ 	if (!plat)
+@@ -118,6 +120,9 @@ stmmac_probe_config_dt(struct platform_device *pdev, const char **mac)
+ 	*mac = of_get_mac_address(np);
+ 	plat->interface = of_get_phy_mode(np);
+ 
++	plat->wolirq_io = of_get_named_gpio_flags(np, "wolirq-gpio",
++											  0, &flags);
++
+ 	/* Get max speed of operation from device tree */
+ 	if (of_property_read_u32(np, "max-speed", &plat->max_speed))
+ 		plat->max_speed = -1;
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 0bfbaba..2d98be8 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -1226,8 +1226,68 @@ static int gen10g_config_init(struct phy_device *phydev)
+ int genphy_suspend(struct phy_device *phydev)
+ {
+ 	int value;
++	struct net_device * ndev = phydev->attached_dev;
+ 
+ 	mutex_lock(&phydev->lock);
++//#if RTL8211E
++#if 1
++	phy_write(phydev, 31, 0x07);
++	phy_write(phydev, 30, 0x6e);
++	phy_write(phydev, 21, ((u16)ndev->dev_addr[1] << 8) + ndev->dev_addr[0]);
++	phy_write(phydev, 22, ((u16)ndev->dev_addr[3] << 8) + ndev->dev_addr[2]);
++	phy_write(phydev, 23, ((u16)ndev->dev_addr[5] << 8) + ndev->dev_addr[4]);
++
++	phy_write(phydev, 31, 0x07);
++	phy_write(phydev, 30, 0x6d);
++	phy_write(phydev, 22, 0x1fff);
++	value = phy_read(phydev, 22);
++
++	phy_write(phydev, 31, 0x07);
++	phy_write(phydev, 30, 0x6d);
++	phy_write(phydev, 21, 0x1000);
++	value = phy_read(phydev, 21);
++
++	phy_write(phydev, 31, 0x07);
++	phy_write(phydev, 30, 0x6d);
++	value =  phy_read(phydev, 25);
++	phy_write(phydev, 25, value | 0x1);
++
++	phy_write(phydev, 31, 0x0);
++#endif
++
++//#if RTL8211F
++#if 0
++	//set INTB pin
++	phy_write(priv->phydev, 31, 0x0d40);
++	value = phy_read(priv->phydev, 22);
++	phy_write(priv->phydev, 22, value | BIT(5));
++
++	//set MAC address
++	phy_write(priv->phydev, 31, 0x0d8c);
++	phy_write(priv->phydev, 16, ((u16)ndev->dev_addr[1] << 8) + ndev->dev_addr[0]);
++	phy_write(priv->phydev, 17, ((u16)ndev->dev_addr[3] << 8) + ndev->dev_addr[2]);
++	phy_write(priv->phydev, 18, ((u16)ndev->dev_addr[5] << 8) + ndev->dev_addr[4]);
++
++	//set max packet length
++	phy_write(priv->phydev, 31, 0x0d8a);
++	phy_write(priv->phydev, 17, 0x9fff);
++
++	//enable wol event
++	phy_write(priv->phydev, 31, 0x0d8a);
++	phy_write(priv->phydev, 16, 0x1000);
++
++	//disable rgmii pad
++	phy_write(priv->phydev, 31, 0x0d8a);
++	value = phy_read(priv->phydev, 19);
++	phy_write(priv->phydev, 19, value | BIT(15));
++
++	phy_write(priv->phydev, 31, 0xa42);
++#endif
++	mutex_unlock(&phydev->lock);
++
++	return 0;
++/*
++	mutex_lock(&phydev->lock);
+ 
+ 	value = phy_read(phydev, MII_BMCR);
+ 	phy_write(phydev, MII_BMCR, value | BMCR_PDOWN);
+@@ -1235,6 +1295,7 @@ int genphy_suspend(struct phy_device *phydev)
+ 	mutex_unlock(&phydev->lock);
+ 
+ 	return 0;
++*/
+ }
+ EXPORT_SYMBOL(genphy_suspend);
+ 
+@@ -1247,6 +1308,59 @@ int genphy_resume(struct phy_device *phydev)
+ {
+ 	int value;
+ 
++	if (phydev->suspended) {
++		mutex_lock(&phydev->lock);
++//#if RTL8211E
++#if 1
++		phy_write(phydev, 31, 0x07);
++		phy_write(phydev, 30, 0x6d);
++		phy_write(phydev, 21, 0x0);
++		value = phy_read(phydev, 21);
++
++		phy_write(phydev, 31, 0x07);
++		phy_write(phydev, 30, 0x6d);
++		value =  phy_read(phydev, 22);
++		phy_write(phydev, 22, value | BIT(15));
++		value = phy_read(phydev, 22);
++
++		phy_write(phydev, 31, 0x07);
++		phy_write(phydev, 30, 0x6d);
++		value =  phy_read(phydev, 25);
++		phy_write(phydev, 25, value & (~(0x1)));
++
++		phy_write(phydev, 31, 0x0);
++#endif
++
++//#if RTL8211F
++#if 0
++		//disable wol event
++		phy_write(priv->phydev, 31, 0x0d8a);
++		phy_write(priv->phydev, 16, 0x0);
++
++		//reset wol
++		phy_write(priv->phydev, 31, 0x0d8a);
++		value = phy_read(priv->phydev, 17);
++		phy_write(priv->phydev, 17, value & (~BIT(15)));
++
++		//enable rgmii pad
++		phy_write(priv->phydev, 31, 0x0d8a);
++		value = phy_read(priv->phydev, 19);
++		phy_write(priv->phydev, 19, value & (~BIT(15)));
++
++		//set INTB pin
++		phy_write(priv->phydev, 31, 0x0d40);
++		value = phy_read(priv->phydev, 22);
++		phy_write(priv->phydev, 22, value & (~BIT(5)));
++
++		phy_write(priv->phydev, 31, 0xa42);
++#endif
++		mutex_unlock(&phydev->lock);
++
++		msleep(100);
++
++		return 0;
++	}
++
+ 	mutex_lock(&phydev->lock);
+ 
+ 	value = phy_read(phydev, MII_BMCR);
+diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
+index cddcbcc..68df9d0 100644
+--- a/include/linux/stmmac.h
++++ b/include/linux/stmmac.h
+@@ -27,6 +27,7 @@
+ #define __STMMAC_PLATFORM_DATA
+ 
+ #include <linux/platform_device.h>
++#include <linux/wakelock.h>
+ 
+ #define STMMAC_RX_COE_NONE	0
+ #define STMMAC_RX_COE_TYPE1	1
+@@ -123,5 +124,9 @@ struct plat_stmmacenet_data {
+ 	void (*exit)(struct platform_device *pdev, void *priv);
+ 	void (*get_eth_addr)(void *priv, unsigned char *addr);
+ 	void *bsp_priv;
++	int wolirq_io;
++	int wolirq_io_level;
++	int wol_irq;
++	struct wake_lock wol_wake_lock;
+ };
+ #endif

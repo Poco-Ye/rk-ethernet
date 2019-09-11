@@ -1,0 +1,258 @@
+commit 033d3c4bc70b82367b23741d5dd53153d68db68a
+Author: cz <cz@rock-chips.com>
+Date:   Thu Oct 9 11:48:09 2014 +0800
+
+    ethernet:gmac: support wake-on-lan io irq
+
+diff --git a/arch/arm/boot/dts/rk3128-box.dts b/arch/arm/boot/dts/rk3128-box.dts
+index e8e3bd6..ccc57de 100755
+--- a/arch/arm/boot/dts/rk3128-box.dts
++++ b/arch/arm/boot/dts/rk3128-box.dts
+@@ -261,6 +261,7 @@
+ 	//power-gpio = <&gpio0 GPIO_A6 GPIO_ACTIVE_HIGH>;
+ 	reset-gpio = <&gpio2 GPIO_D0 GPIO_ACTIVE_LOW>;
+ 	phyirq-gpio = <&gpio0 GPIO_D1 GPIO_ACTIVE_LOW>;
++	wolirq-gpio = <&gpio0 GPIO_D0 GPIO_ACTIVE_LOW>;
+ 	phy-mode = "rgmii";
+ 	clock_in_out = "input";
+ 	tx_delay = <0x30>;
+diff --git a/arch/arm/boot/dts/rk312x-clocks.dtsi b/arch/arm/boot/dts/rk312x-clocks.dtsi
+index 00f6af5..5e99c3c 100755
+--- a/arch/arm/boot/dts/rk312x-clocks.dtsi
++++ b/arch/arm/boot/dts/rk312x-clocks.dtsi
+@@ -1839,7 +1839,7 @@
+ 						"g_pclk_gpio3",		"reserved",
+ 						"reserved",		"reserved";
+ 
+-                                        rockchip,suspend-clkgating-setting=<0xff0f 0x0000>;
++                                        rockchip,suspend-clkgating-setting=<0xff0f 0x0200>;
+ 					#clock-cells = <1>;
+ 				};
+ 
+diff --git a/drivers/net/ethernet/rockchip/gmac/stmmac.h b/drivers/net/ethernet/rockchip/gmac/stmmac.h
+index fffc14d..2ad6d88 100755
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac.h
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac.h
+@@ -125,6 +125,8 @@ struct bsp_priv {
+ 	int reset_io_level;
+ 	int phyirq_io;
+ 	int phyirq_io_level;
++	int wolirq_io;
++	int wolirq_io_level;
+ 	int phy_iface;
+ 	bool clock_input;
+ 	int chip;
+diff --git a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+index ad0003a..a2cabcc 100755
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -2935,7 +2935,7 @@ int stmmac_suspend(struct net_device *ndev)
+ 	stmmac_clear_descriptors(priv);
+ 
+ 	/* Enable Power down mode by programming the PMT regs */
+-	if (device_may_wakeup(priv->device))
++	if (1) //(device_may_wakeup(priv->device))
+ 		priv->hw->mac->pmt(priv->ioaddr, priv->wolopts);
+ 	else {
+ 		stmmac_set_mac(priv->ioaddr, false);
+@@ -2977,7 +2977,7 @@ int stmmac_resume(struct net_device *ndev)
+ 	 * this bit because it can generate problems while resuming
+ 	 * from another devices (e.g. serial console).
+ 	 */
+-	if (device_may_wakeup(priv->device))
++	if (1) //(device_may_wakeup(priv->device))
+ 		priv->hw->mac->pmt(priv->ioaddr, 0);
+ 	else {
+ 		/* enable the clk prevously disabled */
+diff --git a/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c b/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
+index f741086..3227823 100755
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
+@@ -34,6 +34,7 @@
+ #include <linux/rockchip/iomap.h>
+ #include <linux/rockchip/grf.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/interrupt.h>
+ 
+ #define grf_readl(offset)	readl_relaxed(RK_GRF_VIRT + offset)
+ #define grf_writel(v, offset)	do { writel_relaxed(v, RK_GRF_VIRT + offset); dsb(); } while (0)
+@@ -373,6 +374,14 @@ static int phy_power_on(bool enable)
+ 	return ret;
+ }
+ 
++extern void rk_send_wakeup_key(void);
++static irqreturn_t wol_io_isr(int irq, void *dev_id)
++{
++	printk("===========%s\n", __func__);
++	rk_send_wakeup_key();
++	return IRQ_HANDLED;
++}
++
+ int stmmc_pltfr_init(struct platform_device *pdev) {
+ 	int phy_iface;
+ 	int err;
+@@ -435,7 +444,7 @@ int stmmc_pltfr_init(struct platform_device *pdev) {
+ 					gpio_free(bsp_priv->phyirq_io);
+ 				} else {
+ 					struct plat_stmmacenet_data *plat_dat = dev_get_platdata(&pdev->dev);
+-					if (plat_dat) 
++					if (plat_dat)
+ 						plat_dat->mdio_bus_data->probed_phy_irq = irq;
+ 					else
+ 						pr_err("%s: plat_data is NULL\n", __func__);
+@@ -444,6 +453,35 @@ int stmmc_pltfr_init(struct platform_device *pdev) {
+ 		}
+ 	}
+ 
++	if (bsp_priv->wolirq_io > 0) {
++		err = gpio_request(bsp_priv->wolirq_io, "gmac_wol_io");
++		if (err < 0) {
++			printk("gmac_wolirq: failed to request GPIO %d,"
++				" error %d\n", bsp_priv->wolirq_io, err);
++		} else {
++			err = gpio_direction_input(bsp_priv->wolirq_io);
++			if (err < 0) {
++				pr_err("gmac_wolirq: failed to configure input"
++					" direction for GPIO %d, error %d\n",
++				bsp_priv->wolirq_io, err);
++				gpio_free(bsp_priv->wolirq_io);
++			} else {
++				irq = gpio_to_irq(bsp_priv->wolirq_io);
++				if (irq < 0) {
++					err = irq;
++					pr_err("gpio-keys: Unable to get irq number for GPIO %d, error %d\n", bsp_priv->wolirq_io, err);
++					gpio_free(bsp_priv->wolirq_io);
++				} else {
++					err = request_irq(irq, wol_io_isr, IRQF_TRIGGER_FALLING , "gmac_wol_io_irq", NULL);
++					if (err)
++						pr_err("request wol io irq fail");
++					else
++						enable_irq_wake(irq);
++				}
++			}
++		}
++	}
++
+ //rmii or rgmii
+ 	if (phy_iface == PHY_INTERFACE_MODE_RGMII) {
+ 		pr_info("%s: init for RGMII\n", __func__);
+@@ -589,6 +627,10 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
+ 			of_get_named_gpio_flags(np, "phyirq-gpio", 0, &flags);
+ 	g_bsp_priv.phyirq_io_level = (flags == GPIO_ACTIVE_HIGH) ? 1 : 0;
+ 
++	g_bsp_priv.wolirq_io =
++			of_get_named_gpio_flags(np, "wolirq-gpio", 0, &flags);
++	g_bsp_priv.wolirq_io_level = (flags == GPIO_ACTIVE_HIGH) ? 1 : 0;
++
+ 	g_bsp_priv.reset_io = 
+ 			of_get_named_gpio_flags(np, "reset-gpio", 0, &flags);
+ 	g_bsp_priv.reset_io_level = (flags == GPIO_ACTIVE_HIGH) ? 1 : 0;
+diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
+index 6cdc099..f0b0893 100644
+--- a/drivers/net/phy/realtek.c
++++ b/drivers/net/phy/realtek.c
+@@ -15,6 +15,7 @@
+  */
+ #include <linux/phy.h>
+ #include <linux/module.h>
++#include <linux/netdevice.h>
+ 
+ #define RTL821x_PHYSR		0x11
+ #define RTL821x_PHYSR_DUPLEX	0x2000
+@@ -65,6 +66,85 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
+ 	return err;
+ }
+ 
++int rtl8211e_suspend(struct phy_device *phydev)
++{
++	struct net_device * ndev = phydev->attached_dev;
++	mutex_lock(&phydev->lock);
++
++	if (ndev && ndev->dev_addr) {
++		printk("MAC: %x:%x:%x:%x:%x:%x\n",
++			ndev->dev_addr[0],
++			ndev->dev_addr[1],
++			ndev->dev_addr[2],
++			ndev->dev_addr[3],
++			ndev->dev_addr[4],
++			ndev->dev_addr[5]);
++//set MAC address
++		phy_write(phydev, 0x1f, 0x7);
++		phy_write(phydev, 0x1e, 0x6e);
++		phy_write(phydev, 0x15, ((u16)ndev->dev_addr[1] << 8) + ndev->dev_addr[0]); //0x0000);
++		phy_write(phydev, 0x16, ((u16)ndev->dev_addr[3] << 8) + ndev->dev_addr[2]); //0x0000);
++		phy_write(phydev, 0x17, ((u16)ndev->dev_addr[5] << 8) + ndev->dev_addr[4]); //0x0300);
++//set max packet length
++		phy_write(phydev, 0x1f, 0x7);
++		phy_write(phydev, 0x1e, 0x6d);
++		phy_write(phydev, 0x16, 0x1fff);
++//enable wol event
++		phy_write(phydev, 0x1f, 0x7);
++		phy_write(phydev, 0x1e, 0x6d);
++		phy_write(phydev, 0x15, 0x1000);
++//disable rgmii pad
++		phy_write(phydev, 0x1f, 0x7);
++		phy_write(phydev, 0x1e, 0x6d);
++		phy_write(phydev, 0x19, 0x0001);
++
++	}
++
++	mutex_unlock(&phydev->lock);
++
++	return 0;
++}
++
++int rtl8211e_resume(struct phy_device *phydev)
++{
++	struct net_device * ndev = phydev->attached_dev;
++	mutex_lock(&phydev->lock);
++
++	if (ndev && ndev->dev_addr) {
++		printk("MAC: %x:%x:%x:%x:%x:%x\n",
++			ndev->dev_addr[0],
++			ndev->dev_addr[1],
++			ndev->dev_addr[2],
++			ndev->dev_addr[3],
++			ndev->dev_addr[4],
++			ndev->dev_addr[5]);
++	}
++//disable wol event
++	phy_write(phydev, 0x1f, 0x7);
++	phy_write(phydev, 0x1e, 0x6d);
++	phy_write(phydev, 0x15, 0x0000);
++//clear MAC address
++	phy_write(phydev, 0x1f, 0x7);
++	phy_write(phydev, 0x1e, 0x6e);
++	phy_write(phydev, 0x15, 0x0000);
++	phy_write(phydev, 0x16, 0x0000);
++	phy_write(phydev, 0x17, 0x0000);
++//reset wol
++	phy_write(phydev, 0x1f, 0x7);
++	phy_write(phydev, 0x1e, 0x6d);
++	phy_write(phydev, 0x16, 0x8000); //9fff
++//enable rgmii pad
++	phy_write(phydev, 0x1f, 0x7);
++	phy_write(phydev, 0x1e, 0x6d);
++	phy_write(phydev, 0x19, 0x0000);
++
++	phy_write(phydev, 0x1f, 0x0);
++
++	mutex_unlock(&phydev->lock);
++
++	return 0;
++}
++
+ /* RTL8211B */
+ static struct phy_driver rtl8211b_driver = {
+ 	.phy_id		= 0x001cc912,
+@@ -90,8 +170,8 @@ static struct phy_driver rtl8211e_driver = {
+ 	.read_status	= &genphy_read_status,
+ 	.ack_interrupt	= &rtl821x_ack_interrupt,
+ 	.config_intr	= &rtl8211e_config_intr,
+-	.suspend	= genphy_suspend,
+-	.resume		= genphy_resume,
++	.suspend	= rtl8211e_suspend,
++	.resume		= rtl8211e_resume,
+ 	.driver		= { .owner = THIS_MODULE,},
+ };
+ 
