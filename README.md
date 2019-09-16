@@ -8,6 +8,20 @@
 
 
 2、也测量一下cpu logci 电压 看一下dts上面的PMU的配置 正常是1.05v左右
+```
+regulators {
+compatible = "simple-bus";
+#address-cells = <1>;
+#size-cells = <0>;
+vdd_logic: regulator@0 {
+compatible = "regulator-fixed";
+regulator-name = "vdd_logic";
+regulator-min-microvolt = <1050000>;
+regulator-max-microvolt = <1050000>;
+regulator-always-on;
+};
+};
+```
 
 cat /sys/kernel/debug/regulator/vdd_logic/vdd_logic/*
 
