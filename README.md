@@ -1,11 +1,15 @@
 
 1、对于有些差的网络，尤其公司网络，同一个DHCP服务器下面主机过多，有时候会出现，DHCP获取不到IP地址的现象。
+
 对于这种问题，处理办法是，把DHCP的超时时间增大。目前的dhcp超时时间是30s，补丁把超时时间增大到90s。 插拔网卡出现概率性性获取不了ip
+
 89785  参考 把超时时间增大到90s.patch
 
 
 
+2、cat /sys/kernel/debug/regulator/vdd_logic/vdd_logic/*
 
+echo 1050000 > /sys/kernel/debug/regulator/vdd_log/voltage
 
 
 
