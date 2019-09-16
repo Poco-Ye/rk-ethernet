@@ -45,6 +45,20 @@ echo 800000000 > /sys/devices/platform/dmc/devfreq/dmc/min_freq
 cat /sys/devices/platform/dmc/devfreq/dmc/cur_freq
 
 
+4、设置静态
+
+ifconfig eth0 down
+
+ifconfig eth0 192.168.1.100 broadcast 192.168.1.255 netmask 255.255.255.0 up
+
+单网卡添加多个IP地址
+
+ifconfig eth0:0 192.168.1.100 netmask 255.255.255.0 up
+
+ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
+
+
+
 ----------------------------------------------------------------
 
 
