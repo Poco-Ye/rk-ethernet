@@ -7,7 +7,9 @@
 
 
 
-2、cat /sys/kernel/debug/regulator/vdd_logic/vdd_logic/*
+2、也测量一下cpu logci 电压 看一下dts上面的PMU的配置 正常是1.05v左右
+
+cat /sys/kernel/debug/regulator/vdd_logic/vdd_logic/*
 
 echo 1050000 > /sys/kernel/debug/regulator/vdd_log/voltage
 
