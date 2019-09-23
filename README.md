@@ -72,6 +72,11 @@ ifconfig eth0:0 192.168.1.100 netmask 255.255.255.0 up
 ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
 
 
+5、cat /sys/devices/platform/fe300000.ethernet/net/eth0/carrier
+
+拔插网线的前后输入这个命令，看下底层状态是否正确；
+
+平台不同节点路径可能不一样，在sys下面输入find -name "carrier" 没插网线的时候是0 ，插网线的时候是1
 
 ----------------------------------------------------------------
 
