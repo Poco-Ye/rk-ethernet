@@ -8,4 +8,5 @@ led是连在phy上面的，有几个led, led_speed100 led_link led_speed10 led_d
 
 kernel_4.4_rk322x_phy_led_control.patch 内部phy控制	
 
-phy_led_ctrl.diff	 stmmac_main.c 这个是主要gmac 接phy的控制
+phy_led_ctrl.diff	 stmmac_main.c 这个是主要gmac 接phy的控制  rtl8211e, rtl8201f, dp84838三个phy兼容的补丁
+
