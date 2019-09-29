@@ -1,0 +1,32 @@
+diff --git a/kernel/drivers/net/ethernet/rockchip/gmac/stmmac_main.c b/kernel/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+index a5ea1a5..b07123a 100755
+--- a/kernel/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/kernel/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -902,6 +902,7 @@ static int stmmac_init_phy(struct net_device *dev)
+ 	char phy_id_fmt[MII_BUS_ID_SIZE + 3];
+ 	char bus_id[MII_BUS_ID_SIZE];
+ 	int interface = priv->plat->interface;
++	int val;
+ 	priv->oldlink = 0;
+ 	priv->speed = 0;
+ 	priv->oldduplex = -1;
+@@ -944,6 +945,19 @@ static int stmmac_init_phy(struct net_device *dev)
+ 		 " Link = %d\n", dev->name, phydev->phy_id, phydev->link);
+ 
+ 	priv->phydev = phydev;
++	/*switch to extension page44*/
++	phy_write(phydev,0x1F,(0x07));
++	phy_write(phydev,0x1E,0x2c);
++
++	/*what you should modify start*/
++	val = phy_read(phydev, 26);
++	phy_write(phydev, 26, (val & (~0x20)));
++
++	val = phy_read(phydev, 28);
++	phy_write(phydev, 28, (val & (~0x70)));
++
++	/*what you should modify is end*/
++	phy_write(phydev,31,(0x0000));
+ 
+ 	gmac_create_sysfs(phydev);
+ 
