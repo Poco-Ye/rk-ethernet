@@ -1,0 +1,21 @@
+rk3288 Android5.1 ，调试的机器，生产老化做开关机测试，发现有16%的机器，以太网不能自动连接，手动插拔之后正常。正常和异常的log如附件
+
+从log看，我怀疑是千兆以太网和百兆以太网问题，我们拿复现的机器，都用百兆测试也会出现问题
+
+
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_platform.c
+@@ -495,11 +495,11 @@ static int phy_power_on(bool enable)
+                if (gpio_is_valid(bsp_priv->reset_io)) {
+                        gpio_direction_output(bsp_priv->reset_io,
+                                              bsp_priv->reset_io_level);
+-                       mdelay(5);
++                       mdelay(100);
+                        gpio_direction_output(bsp_priv->reset_io,
+                                              !bsp_priv->reset_io_level);
+                }
+-               mdelay(30);
++               mdelay(100);
+
+        } else {
+                //pull down reset
