@@ -30,6 +30,8 @@ echo 1050000 > /sys/kernel/debug/regulator/vdd_log/voltage
 
 3、上行或者下行带宽比较低，和CPU和ddr关系比较大，可以调整一下参数和测试看看，最好是将上行带宽高的dts配置和以太网驱动移植过去
 
+RX能到900,TX不行，比较怀疑是TX_CLK占空比不对，所以我们检查以太网以clk为主，mac clk(可以断掉33欧姆电阻)  tx clk rx clk
+
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 调整cpu 相关参数
