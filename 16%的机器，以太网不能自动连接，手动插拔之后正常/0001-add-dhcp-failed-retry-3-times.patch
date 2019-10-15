@@ -1,0 +1,71 @@
+diff --git a/java/com/android/server/ethernet/EthernetNetworkFactory.java b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+index 3535e9a..e80b252 100755
+--- a/java/com/android/server/ethernet/EthernetNetworkFactory.java
++++ b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+@@ -114,6 +114,7 @@ class EthernetNetworkFactory {
+     private LinkProperties mLinkProperties;
+     public int mEthernetCurrentState = EthernetManager.ETHER_STATE_DISCONNECTED;
+     public int ethCurrentIfaceState = EthernetManager.ETHER_IFACE_STATE_DOWN;
++    private IpAssignment mConnectMode;
+ 
+     private void LOGV(String code) {
+         if(VDBG) Log.d(TAG,code);
+@@ -169,9 +170,15 @@ class EthernetNetworkFactory {
+         synchronized(this) {
+             mLinkUp = up;
++            if (!up)
++                tryCount = 0;
++            else
++                tryCount = 3;
+             mNetworkInfo.setIsAvailable(up);             
+             if (!up) {
+                 // Tell the agent we're disconnected. It will call disconnect().
+                 mNetworkInfo.setDetailedState(DetailedState.DISCONNECTED, null, mHwAddr);
++                if (mConnectMode == IpAssignment.DHCP)                    
++                    NetworkUtils.stopDhcp(iface);
+                 sendEthernetStateChangedBroadcast(EthernetManager.ETHER_STATE_DISCONNECTED);
+             }
+             updateAgent();
+@@ -392,7 +396,7 @@ class EthernetNetworkFactory {
+             mNetworkAgent.sendNetworkScore(mLinkUp? NETWORK_SCORE : 0);
+         }
+     }
+-/*
++
+     Handler handler = new Handler();
+     Runnable runnable = new Runnable() {
+         @Override
+@@ -402,7 +409,7 @@ class EthernetNetworkFactory {
+         }
+     };
+     private static int tryCount=3;
+-*/
++
+    /* Called by the NetworkFactory on the handler thread. */
+     public void onRequestNetwork() {
+         // TODO: Handle DHCP renew.
+@@ -412,6 +419,7 @@ class EthernetNetworkFactory {
+                 LinkProperties linkProperties;
+ 
+                 IpConfiguration config = mEthernetManager.getConfiguration();
++                mConnectMode = config.getIpAssignment();
+ 
+                 if (config.getIpAssignment() == IpAssignment.STATIC) {
+                     if (!setStaticIpAddress(config.getStaticIpConfiguration())) {
+@@ -438,10 +446,11 @@ class EthernetNetworkFactory {
+                     // we will lose our IP address and connectivity without
+                     // noticing.
+                     if (!NetworkUtils.runDhcp(mIface, dhcpResults)) {
+-                       /* if(tryCount > 0) {
++                        if(tryCount > 0) {
+                             tryCount--;
+                             handler.postDelayed(runnable, 1000);
+-                        }*/
++                            return;
++                        }
+                         Log.e(TAG, "DHCP request error:" + NetworkUtils.getDhcpError());
+                         sendEthernetStateChangedBroadcast(EthernetManager.ETHER_STATE_DISCONNECTED); 
+                         // set our score lower than any network could go
+-- 
+1.9.1
+
