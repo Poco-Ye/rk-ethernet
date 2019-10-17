@@ -91,6 +91,18 @@ tcpdump -i eth0 -s 0 -w /data/snf.pcap
 
 8、java/com/android/server/ethernet
 
+9、PHY ID 00000000 就要确认一下mdc clk的2.5M以下（可以打上mdc2.5M patch）
+
+对照原理图，先确定IOMUX关系是否正确
+
+busybox find /d/pinctrl -name pinmux-pins
+
+cat ./sys/kernel/debug/pinctrl/pinctrl/pinmux-pins
+
+[ 0.668216] eth%d: PHY ID 00000000 at 1 IRQ POLL (stmmac-0:01)
+
+PHY ID不正确，示波器量测MDC是2.5M 及2.5M以下。
+
 ----------------------------------------------------------------
 
 
