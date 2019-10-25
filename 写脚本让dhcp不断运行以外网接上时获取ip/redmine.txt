@@ -1,0 +1,7 @@
+可以加到对应init.rc 启动时执行一次
++service  network_control /system/bin/network_control.sh
++    class main
++    oneshot            
++
++on property:sys.boot_completed=1
++    start network_control
