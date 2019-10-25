@@ -1,4 +1,11 @@
 ```
+安卓通过DHCP协议的DORA Discovery发现 Offer提供 Request请求 Ack确认 获取IP地址的过程
+安卓N之前 5.0 6.0通过 android_net_utils_runDhcp 方法运行 /system/bin/dhcpcd 获取ip地址
+安卓N之后 N不要了runDhcpcd(),而是通过DhcpClient
+DhcpClient是通过framework发送dhcpcd协议的UDP请求包直接去拿IP，不再使用开源的dhcpcd
+google还用了一个状态机 IpManager 来管理dhcpcd成功还是失败等状态，
+将ip赋值给IpConfiguration和LinkProperties传递到上层的framework
+
 注册表，prop
 
 android的系统启动可以这样去理解property:sys.boot_completed
