@@ -55,7 +55,7 @@ gmac_clkin: external-gmac-clock {
           #clock-cells = <0>;
  };
 
-然后配置节点的clk由provider提供
+然后配置节点的clk（一个或者多个）由provider提供
 &gmac {
 phy-supply = <&vcc_phy>;
 clock_in_out = "input";
