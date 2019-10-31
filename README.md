@@ -82,6 +82,12 @@ PHY ID不正确，示波器量测MDC是2.5M 及2.5M以下,使用patch使MDC clk�
 打上关闭EEE功能的patch
 ```
 
+11、cat /d/clk/clk_summary
+```
+对照原理图，先确定IOMUX关系是否正确，
+busybox find /d/pinctrl -name pinmux-pins
+cat xxx/xxx/pinmux-pins
+```
 
 ----------------------------------------------------------------
 
