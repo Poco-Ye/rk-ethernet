@@ -68,6 +68,9 @@ tcpdump -i eth0 -s 0 -w /data/snf.pcap
 ```
 EthernetNetworkFactory  /frameworks/opt/net/ethernet/java/com/android/server/ethernet/
 ConnectivityService
+
+https://blog.csdn.net/u013686019/article/details/51447129
+或者网络优先级更改
 ```
 
 9、PHY ID 00000000 就要确认一下mdc clk的2.5M以下（可以打上mdc2.5M patch）
