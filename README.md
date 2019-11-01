@@ -96,6 +96,8 @@ busybox find /d/pinctrl -name pinmux-pins
 cat xxx/xxx/pinmux-pins
 ```
 
+12、RMII_CLK_CTL配置是低，PHY就会有50M输出，如果是拉高就是我们给PHY时钟
+
 
 ----------------------------------------------------------------
 
