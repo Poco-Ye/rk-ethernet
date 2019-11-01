@@ -64,7 +64,11 @@ ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
 ```
 tcpdump -i eth0 -s 0 -w /data/snf.pcap
 ```
-8、java/com/android/server/ethernet
+8、
+```
+EthernetNetworkFactory  /frameworks/opt/net/ethernet/java/com/android/server/ethernet/
+ConnectivityService
+```
 
 9、PHY ID 00000000 就要确认一下mdc clk的2.5M以下（可以打上mdc2.5M patch）
 ```
@@ -88,6 +92,7 @@ PHY ID不正确，示波器量测MDC是2.5M 及2.5M以下,使用patch使MDC clk�
 busybox find /d/pinctrl -name pinmux-pins
 cat xxx/xxx/pinmux-pins
 ```
+
 
 ----------------------------------------------------------------
 
