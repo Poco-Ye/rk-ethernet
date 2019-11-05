@@ -1,0 +1,44 @@
+有部分客户发现打上phy_led_ctrl.diff后，有一个LED无法点量，
+这个有可能是硬件没按照参考电路接，或者RJ45上LED灯极性是反的。请硬件工程师排查。
+
+
+硬件确认没问题，可手动操作寄存器，现在phy寄存器一般采用分页技术，先要要切换到对应page,
+一般配制
+LED0 Blinking
+LED1 Linnk up/link down
+LED2 即可Blinking 也可Link down
+
+寄存器路径搜索
+busybox find / -name phy_reg*
+切换到page7 寄存器操作方法
+1、kernel4.4 
+echo 31 0x0007 > /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+2、kernel3.10
+echo 31 > /sys/devices/ff290000.eth/stmmac-0:01/phy_reg
+echo 0x0007 > /sys/devices/ff290000.eth/stmmac-0:01/phy_regValue 
+
+
+3399 8211E
+对照章节6.12 LED configuration
+#page 7 (set to extension page)
+echo 31 0x0007 > /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+#page 44 
+echo 30 0x0002c > /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+
+echo 28 0x9770 > /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+echo 26 0x00D1 > /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+cat /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+#backup page 0
+echo 31 0x0000 > /sys/devices/platform/fe300000.ethernet/mdio_bus/stmmac-0/stmmac-0:00/phy_registers
+
+
+
+
+
+
