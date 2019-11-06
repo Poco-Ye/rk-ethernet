@@ -1,0 +1,62 @@
+diff --git a/java/com/android/server/ethernet/EthernetNetworkFactory.java b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+index 15fe2e2..8f592e7 100755
+--- a/java/com/android/server/ethernet/EthernetNetworkFactory.java
++++ b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+@@ -132,6 +132,7 @@ class EthernetNetworkFactory {
+     public int mEthernetCurrentState = EthernetManager.ETHER_STATE_DISCONNECTED;
+     private boolean mReconnecting;
+     private IpAssignment mConnectMode;
++    private EthernetNetworkFactoryExt mEthernetNetworkFactoryExt;
+ 
+     public String dumpEthCurrentState(int curState) {
+         if (curState == EthernetManager.ETHER_STATE_DISCONNECTED)
+@@ -176,6 +177,7 @@ class EthernetNetworkFactory {
+         mLinkProperties = new LinkProperties();
+         initNetworkCapabilities();
+         mListeners = listeners;
++        mEthernetNetworkFactoryExt = new EthernetNetworkFactoryExt();
+     }
+ 
+     private class LocalNetworkFactory extends NetworkFactory {
+@@ -291,18 +293,21 @@ class EthernetNetworkFactory {
+         @Override
+         public void interfaceLinkStateChanged(String iface, boolean up) {
+             updateInterfaceState(iface, up);
++            mEthernetNetworkFactoryExt.interfaceLinkStateChanged(iface, up);
+         }
+ 
+         @Override
+         public void interfaceAdded(String iface) {
+             Log.d(TAG, "interfaceAdded: " + iface);
+             maybeTrackInterface(iface);
++            mEthernetNetworkFactoryExt.interfaceAdded(iface);
+         }
+ 
+         @Override
+         public void interfaceRemoved(String iface) {
+             Log.d(TAG, "interfaceRemoved: " + iface);
+             stopTrackingInterface(iface);
++            mEthernetNetworkFactoryExt.interfaceRemoved(iface);
+         }
+     }
+ 
+@@ -590,8 +595,8 @@ class EthernetNetworkFactory {
+         mPppoeManager = (PppoeManager) context.getSystemService(Context.PPPOE_SERVICE);
+ 
+         // Interface match regex.
+-        mIfaceMatch = context.getResources().getString(
+-                com.android.internal.R.string.config_ethernet_iface_regex);
++        mIfaceMatch = "eth0";//context.getResources().getString(
++                //com.android.internal.R.string.config_ethernet_iface_regex);
+         Log.d(TAG, "EthernetNetworkFactory start " + mIfaceMatch);
+ 
+         // Create and register our NetworkFactory.
+@@ -651,6 +656,8 @@ class EthernetNetworkFactory {
+         } catch (RemoteException|IllegalStateException e) {
+             Log.e(TAG, "Could not get list of interfaces " + e);
+         }
++
++        mEthernetNetworkFactoryExt.start(context, mNMService);
+     }
+ 
+     public synchronized void stop() {

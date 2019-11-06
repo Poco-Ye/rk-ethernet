@@ -1,0 +1,69 @@
+diff --git a/java/com/android/server/ethernet/EthernetNetworkFactory.java b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+index d626aed..b675a9f 100755
+--- a/java/com/android/server/ethernet/EthernetNetworkFactory.java
++++ b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+@@ -114,6 +114,7 @@ class EthernetNetworkFactory {
+     private LinkProperties mLinkProperties;
+     public int mEthernetCurrentState = EthernetManager.ETHER_STATE_DISCONNECTED;
+     public int ethCurrentIfaceState = EthernetManager.ETHER_IFACE_STATE_DOWN;
++    private EthernetNetworkFactoryExt mEthernetNetworkFactoryExt;
+ 
+     private void LOGV(String code) {
+         if(VDBG) Log.d(TAG,code);
+@@ -140,6 +141,7 @@ class EthernetNetworkFactory {
+     EthernetNetworkFactory(RemoteCallbackList<IEthernetServiceListener> listeners) {
+         mNetworkInfo = new NetworkInfo(ConnectivityManager.TYPE_ETHERNET, 0, NETWORK_TYPE, "");
+         mLinkProperties = new LinkProperties();
++	mEthernetNetworkFactoryExt = new EthernetNetworkFactoryExt();
+         initNetworkCapabilities();
+         mListeners = listeners;
+     }
+@@ -186,16 +188,19 @@ class EthernetNetworkFactory {
+         @Override
+         public void interfaceLinkStateChanged(String iface, boolean up) {
+             updateInterfaceState(iface, up);
++            mEthernetNetworkFactoryExt.interfaceLinkStateChanged(iface, up);
+         }
+ 
+         @Override
+         public void interfaceAdded(String iface) {
+             maybeTrackInterface(iface);
++            mEthernetNetworkFactoryExt.interfaceAdded(iface);		
+         }
+ 
+         @Override
+         public void interfaceRemoved(String iface) {
+             stopTrackingInterface(iface);
++            mEthernetNetworkFactoryExt.interfaceRemoved(iface);
+         }
+     }
+ 
+@@ -500,7 +505,7 @@ class EthernetNetworkFactory {
+     private int getEthernetCarrierState() {
+         if(mIfaceMatch != "") {
+                 try {
+-                    File file = new File("/sys/class/net/"+"eth0"+"/carrier");
++                    File file = new File("/sys/class/net/"+mIface+"/carrier");
+                     String carrier = ReadFromFile(file);
+                     Log.d(TAG, "carrier = " + carrier);
+                     int carrier_int = Integer.parseInt(carrier);
+@@ -525,8 +530,8 @@ class EthernetNetworkFactory {
+         mEthernetManager = (EthernetManager) context.getSystemService(Context.ETHERNET_SERVICE);
+ 
+         // Interface match regex.
+-        mIfaceMatch = context.getResources().getString(
+-                com.android.internal.R.string.config_ethernet_iface_regex);
++        mIfaceMatch = "eth0";//context.getResources().getString(
++                //com.android.internal.R.string.config_ethernet_iface_regex);
+ 
+         // Create and register our NetworkFactory.
+         mFactory = new LocalNetworkFactory(NETWORK_TYPE, context, target.getLooper());
+@@ -570,6 +575,8 @@ class EthernetNetworkFactory {
+         } catch (RemoteException e) {
+             Log.e(TAG, "Could not get list of interfaces " + e);
+         }
++
++        mEthernetNetworkFactoryExt.start(context, mNMService);
+     }
+ 
+     public synchronized void stop() {

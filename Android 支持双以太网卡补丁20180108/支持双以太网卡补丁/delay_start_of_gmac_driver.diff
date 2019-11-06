@@ -1,0 +1,28 @@
+diff --git a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+index 1edcff1..bf1fa91 100755
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -52,6 +52,7 @@
+ #include "stmmac_ptp.h"
+ #include "stmmac.h"
+ #include "../eth_mac.h"
++#include <linux/kthread.h>
+ 
+ #undef STMMAC_DEBUG
+ /*#define STMMAC_DEBUG*/
+@@ -3242,6 +3243,15 @@ int stmmac_restore(struct net_device *ndev)
+  */
+ static int __init stmmac_init(void)
+ {
++	struct task_struct *kthread = NULL;
++	kthread = kthread_run(eth_delay_thread, NULL, "eth_delay_thread");
++	if (IS_ERR(kthread))
++		pr_err("create eth_delay_thread failed.\n");
++	return 0;
++}
++
++static int eth_delay_thread(void *data)
++{
+ 	int ret;
+ 
+ 	ret = stmmac_register_platform();
