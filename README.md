@@ -98,6 +98,12 @@ cat xxx/xxx/pinmux-pins
 
 12、RMII_CLK_CTL配置是低，PHY就会有50M输出，如果是拉高就是我们给PHY时钟
 
+13、3399经常MAC MDC引脚会被复用，测的频率还是TX CLK 125M， RX CLK 25M(异常，导致phy设置异常)，MAC CLK 125M
+```
+GPIO3B[0]
+gslx680: gslx680@40 {
+touch-gpio = <&gpio3 RK_PB0 IRQ_TYPE_EDGE_RISING>; 
+```
 
 ----------------------------------------------------------------
 
