@@ -1,6 +1,13 @@
 
-0、确认mac clk tx clk rx clk mdc clk，再确认复用
+0、开两个终端，一个查看Kconfig，一个在menuconfig上搜索（所有的Kconfig子块可以搜索到），可以很快确定目前的模块驱动
+```
+确认mac clk tx clk rx clk mdc clk，再确认复用，gmac奇怪问题比较多是电源的问题，特别是CPU LOGIC电压的问题或者IO驱动强度，配了CRU clk却拿不到，
+查看clk_summary没有一个是使能的
+PHY的问题主要就是25M晶振，没有贴没有clk给出，txclk是由phy clk给gmac，然后gmac再给出去tx clk，有管脚复用设置phy的时候可能RX clk也不对
 
+总之是gmac操作phy的寄存器，一种是我操作ok了你硬件不行产生偏差，一种是我操作ok你没反应就像石头一样没有启动，一种是我操作有问题比如复用，
+一种是我操作ok你也ok但是有干扰（delay或者电压比如概率性获取不到ip或者丢包或者断线）
+```
 
 1、对于有些差的网络，尤其公司网络，同一个DHCP服务器下面主机过多，有时候会出现，DHCP获取不到IP地址的现象。
 
