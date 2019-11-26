@@ -81,6 +81,21 @@ provider没有重新配置，使用默认的
         status = "okay";
 };
 
+
+还有或者
+用主控提供clock配制， cat clk_summary
+&gmac {
+phy-supply = <&vcc_phy>;
+clock_in_out = "output";
+snps,reset-gpio = <&gpio2 13 GPIO_ACTIVE_LOW>;
+snps,reset-active-low;
+assigned-clocks = <&cru SCLK_GMAC>;
+assigned-clock-parents = <&cru SCLK_GMAC>;
+snps,reset-delays-us = <0 50000 50000>;
+status = "okay";
+};
+
+
 ```
 
 
