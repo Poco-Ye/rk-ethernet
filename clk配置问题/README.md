@@ -1,44 +1,81 @@
-clk 的配置主要是gmac提供给phy的时候经常有问题，或者gmac和phy同时有clk出来，也会有问题
+```
+3399的CRU寄存器在0xff760000
 
-clk的感觉是每一个设备有多个clk，然后配置多个
+ cru: clock-controller@ff760000 {
+                compatible = "rockchip,rk3399-cru";
+                reg = <0x0 0xff760000 0x0 0x1000>;
+                #clock-cells = <1>;
+                #reset-cells = <1>;
+                assigned-clocks =
+                        <&cru ACLK_VOP0>, <&cru HCLK_VOP0>,
+                        <&cru ACLK_VOP1>, <&cru HCLK_VOP1>,
+                        <&cru ARMCLKL>, <&cru ARMCLKB>,
+                        <&cru PLL_GPLL>, <&cru PLL_CPLL>,
+                        <&cru ACLK_GPU>, <&cru PLL_NPLL>,
+                        <&cru ACLK_PERIHP>, <&cru HCLK_PERIHP>,
+                        <&cru PCLK_PERIHP>,
+                        <&cru ACLK_PERILP0>, <&cru HCLK_PERILP0>,
+                        <&cru PCLK_PERILP0>, <&cru ACLK_CCI>,
+                        <&cru HCLK_PERILP1>, <&cru PCLK_PERILP1>,
+                        <&cru ACLK_VIO>, <&cru ACLK_HDCP>,
+                        <&cru ACLK_GIC_PRE>,
+                        <&cru PCLK_DDR>;
+                assigned-clock-rates =
+                         <400000000>,  <200000000>,
+                         <400000000>,  <200000000>,
+                         <816000000>, <816000000>,
+                         <594000000>,  <800000000>,
+                         <200000000>, <1000000000>,
+                         <150000000>,   <75000000>,
 
-设备一
+
+assigned-clocks这种节点类似pinctrl子系统，是给clock 子系统使用的，在datasheet上有对于模块的所有的CLOCK
+
+比如一个gmac会列出十几个clock寄存器位置
+
+gmac  3  0  aclk_gmac_cpl l_src        4 - - - - - - - - G6[9] - -
+
+IO_CLK 4 8  clkin_gmac<IO> - - - - - - - - - - - -       这个是输入的IO clk 所以设置输入的时候，有对应得方法，填大小，设置clock
+IO_CLK 4 9  gmac_phy_rx_clk<IO> - - - - - - - - - - - -
+
+
+cat /d/clk/clk_summary  可以看到目前得clk得设置情况，总之方法就是设置寄存器
+
+
+比如在gmac节点上面
+
+1、clocks节点（这个和clock names配合时候，用意就是给寄存器设置名字，好看一点），cru所有寄存器在include/dt-bindings/clock/rk3399-cru.h
+
+clocks = <&cru SCLK_MAC>, <&cru SCLK_MAC_RX>,
+         <&cru SCLK_MAC_TX>, <&cru SCLK_MACREF>,
+         <&cru SCLK_MACREF_OUT>, <&cru ACLK_GMAC>,
+         <&cru PCLK_GMAC>;
+clock-names = "stmmaceth", "mac_clk_rx",
+              "mac_clk_tx", "clk_mac_ref",
+              "clk_mac_refout", "aclk_mac",
+              "pclk_mac";
+
+2、assigned-clocks
+在drivers/clk/clk-conf.c里面处理
+
+这个开头已经看到了，就是设置对应得寄存器得意思，“指定的意思”
+
+a、可以设置寄存器得值
+assigned-clock-rates
+
+b、可以设置父节点
+assigned-clock-parents
+
+
+
+
+看pin子系统在/d/pinctrl/pinmux-pins
+看clock子系统在/d/clk/clk_summary
+
+可以看到他们的设置，设置复用了没有，或者设置clock了没有
+
 ```
 
-clocks = <clk节点1 clk节点索引1>   <clk节点2 clk节点索引3> 
-clocks-names =  "hehe"                     "haha"
-
-hehe haha这样的名字可以自己取的
-
-这个设备需要两个clk，就需要两个clk provider
-
-设备的设置和provider的设置是不一样的
-
-provider 有多个输出的时候，就有多个索引，
-
-provider ＃clock-cells = <1> 的时候就有多个输出，有多个索引，就有多个选择来加载使用
-
-＃clock-cells = <0> 的时候就只有一个， 可以根据provider的索引添加，查看实际大小可以看clk_sum* clock-output-names
-
-oscillator {
-compatible = “myclocktype”;
-#clock-cells = <1>;
-clock-indices = <1>, <3>;
-clock-output-names = “clka”, “clkb”;
-}
-
-device {
-    clocks = <&osc 1>, <&ref 0>;
-    clock-names = "baud", "register";
-};
-```
-
-除了配置provider，也可以设置provider的父节点，分频或者倍频获得
-```
-assigned-clocks：A， B，C；
-assigned-clock-parent：A_parent，B_parent，C_parent；
-
-```
 
 
 
@@ -62,7 +99,7 @@ clock_in_out = "input";
 snps,reset-gpio = <&gpio2 13 GPIO_ACTIVE_LOW>;
 snps,reset-active-low;
 assigned-clocks = <&cru SCLK_GMAC>;
-assigned-clock-parents = <&gmac_clkin>;
+assigned-clock-parents = <&gmac_clkin>;      //这里是真正设置的地方
 snps,reset-delays-us = <0 50000 50000>;
 status = "okay";
 };
@@ -70,10 +107,11 @@ status = "okay";
 
 clk out 
 ```
-provider没有重新配置，使用默认的
+寄存器的数值不用更改，因为百兆一般默认都50M接两根线（50*2）
 
 &gmac {
         phy-supply = <&vcc_phy>;
+        phy-mode = "rmii";
         clock_in_out = "output";
         snps,reset-gpio = <&gpio2 13 GPIO_ACTIVE_LOW>;
         snps,reset-active-low;
@@ -82,8 +120,8 @@ provider没有重新配置，使用默认的
 };
 
 
-还有或者
-用主控提供clock配制， cat clk_summary
+还有或者有可能要改一下parents，主要修改的SCLK_GMAC
+
 &gmac {
 phy-supply = <&vcc_phy>;
 clock_in_out = "output";
