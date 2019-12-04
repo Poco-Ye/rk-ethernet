@@ -116,6 +116,11 @@ GPIO3B[0]
 gslx680: gslx680@40 {
 touch-gpio = <&gpio3 RK_PB0 IRQ_TYPE_EDGE_RISING>; 
 ```
+14、
+```
+ping -s 1024 xx.xx.xx.xx
+ping -s 指定 ping包的大小 从 1k 往上加 ，确认ping 包方式是否 在ping的数据包增大到一定程度 也会出问题
+```
 
 ----------------------------------------------------------------
 
