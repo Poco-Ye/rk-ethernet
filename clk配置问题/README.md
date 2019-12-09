@@ -136,6 +136,28 @@ status = "okay";
 
 ```
 
+```
+百兆也可以配置在npll下面
+&gmac {
+	phy-supply = <&vcc_phy>;
+	phy-mode = "rmii";
+	clock_in_out = "output";
+	snps,reset-gpio = <&gpio3 15 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	snps,reset-delays-us = <0 10000 50000>;
+	//assigned-clocks = <&cru SCLK_MAC>;
+	//assigned-clock-parents = <&cru SCLK_MAC>;
+	assigned-clocks = <&cru SCLK_MAC>,<&cru SCLK_RMII_SRC>;
+	assigned-clock-rates = <50000000>;
+	assigned-clock-parents = <&cru PLL_NPLL>,<&cru SCLK_MAC>;
 
+	pinctrl-names = "default";
+	pinctrl-0 = <&rmii_pins>;
+	tx_delay = <0x48>;
+	rx_delay = <0x21>;
+	status = "okay";
+};
+
+```
 
 
