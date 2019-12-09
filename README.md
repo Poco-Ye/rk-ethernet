@@ -107,7 +107,6 @@ PHY ID不正确，示波器量测MDC是2.5M 及2.5M以下,使用patch使MDC clk�
 busybox find /d/pinctrl -name pinmux-pins
 cat xxx/xxx/pinmux-pins
 ```
-
 12、RMII_CLK_CTL配置是低，PHY就会有50M输出，如果是拉高就是我们给PHY时钟
 
 13、3399经常MAC MDC引脚会被复用，测的频率还是TX CLK 125M， RX CLK 25M(异常，导致phy设置异常)，MAC CLK 125M
@@ -120,6 +119,18 @@ touch-gpio = <&gpio3 RK_PB0 IRQ_TYPE_EDGE_RISING>;
 ```
 ping -s 1024 xx.xx.xx.xx
 ping -s 指定 ping包的大小 从 1k 往上加 ，确认ping 包方式是否 在ping的数据包增大到一定程度 也会出问题
+```
+15、
+```
+cat /d/mmc0/ios
+clock:          125000000 Hz
+vdd:            23 (3.5 ~ 3.6 V)
+bus mode:       2 (push-pull)
+chip select:    0 (don't care)
+power mode:     2 (on)
+bus width:      3 (8 bits)
+timing spec:    8 (mmc high-speed SDR200)
+signal voltage: 0 (1.80 V)
 ```
 
 ----------------------------------------------------------------
