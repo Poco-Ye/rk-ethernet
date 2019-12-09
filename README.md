@@ -120,7 +120,7 @@ touch-gpio = <&gpio3 RK_PB0 IRQ_TYPE_EDGE_RISING>;
 ping -s 1024 xx.xx.xx.xx
 ping -s 指定 ping包的大小 从 1k 往上加 ，确认ping 包方式是否 在ping的数据包增大到一定程度 也会出问题
 ```
-15、
+15、查看mmc0 mmc1 mmc2 clock是否配的好
 ```
 cat /d/mmc0/ios
 clock:          125000000 Hz
