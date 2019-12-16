@@ -127,6 +127,9 @@ ping -s 指定 ping包的大小 从 1k 往上加 ，确认ping 包方式是否 �
 EthernetNetworkFactory.java和EthernetNetworkFactoryExt.java两个文件根据属性来切换接口
 EthernetNetworkFactory这个文件中的可以访问外网，自行参考和开发需求
 ```
+
+16、识别网卡是MDC CLK和MDIO两条线，识别不了MDC就没有MDC CLK了，no phy found和硬件关系较大
+
 ----------------------------------------------------------------
 
 
