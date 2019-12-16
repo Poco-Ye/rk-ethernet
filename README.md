@@ -121,12 +121,12 @@ ping -s 1024 xx.xx.xx.xx
 ping -s 指定 ping包的大小 从 1k 往上加 ，确认ping 包方式是否 在ping的数据包增大到一定程度 也会出问题
 ```
 
-15、双以太网问题
-目前补丁就是eth0用于访问外网，eth1或usb0只能访问局域网
+15、双以太网目前补丁就是eth0用于访问外网，eth1或usb0只能访问局域网
+```
 给客户建议，设置里面加个切换按钮，设置用哪个网口上网，保存到属性里，然后
 EthernetNetworkFactory.java和EthernetNetworkFactoryExt.java两个文件根据属性来切换接口
 EthernetNetworkFactory这个文件中的可以访问外网，自行参考和开发需求
-
+```
 ----------------------------------------------------------------
 
 
