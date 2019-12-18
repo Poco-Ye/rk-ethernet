@@ -76,7 +76,7 @@ ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
 ```
 tcpdump -i eth0 -s 0 -w /data/snf.pcap
 ```
-8、
+8、过滤
 ```
 EthernetNetworkFactory  /frameworks/opt/net/ethernet/java/com/android/server/ethernet/
 ConnectivityService
