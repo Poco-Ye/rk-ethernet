@@ -130,6 +130,18 @@ EthernetNetworkFactory这个文件中的可以访问外网，自行参考和开�
 
 16、识别网卡是MDC CLK和MDIO两条线，识别不了MDC就没有MDC CLK了，no phy found和硬件关系较大
 
+17、phy_register查看
+```
+kernel 3.10
+find ./ -name phy_reg
+cat phy_reg
+kernel 4.4
+find ./ -name phy_registers
+cat phy_registers
+
+```
+
+
 ----------------------------------------------------------------
 
 
