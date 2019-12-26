@@ -158,6 +158,8 @@ status = "okay";
 	status = "okay";
 };
 
+还不行rmii的驱动强度调大
+
 ```
 
 
