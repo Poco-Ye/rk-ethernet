@@ -75,6 +75,7 @@ ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
 7、以太网抓包
 ```
 tcpdump -i eth0 -s 0 -w /data/snf.pcap
+tcpdump -i wlan0 -s 0 -w /data/wlan.pcap
 ```
 8、过滤
 ```
