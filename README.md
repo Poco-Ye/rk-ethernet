@@ -1,12 +1,16 @@
 
 开两个终端，一个查看Kconfig，一个在menuconfig上搜索（所有的Kconfig子块可以搜索到），可以很快确定目前的模块驱动
+
 ```
+一种是我操作ok了你硬件不行产生偏差（主要是25CLK频偏），一种是我操作ok你没反应就像石头一样没有启动（phy没有启动，rest引脚或者vcc或者有些线没有接），一种是我操作有问题比如我被复用，
+一种是我操作ok你也ok但是有干扰（走线干扰，delay或者电压比如概率性获取不到ip或者丢包或者断线）
+
+
 确认mac clk tx clk rx clk mdc clk，再确认复用，gmac奇怪问题比较多是电源的问题，特别是CPU LOGIC电压的问题或者IO驱动强度，配了CRU clk却拿不到，
 查看clk_summary没有一个是使能的
 PHY的问题主要就是25M晶振，没有贴没有clk给出，txclk是由phy clk给gmac，然后gmac再给出去tx clk，有管脚复用设置phy的时候可能RX clk也不对
 
-总之是gmac操作phy的寄存器（rx clk是操作phy寄存器给出的，mdc clk是gmac给出的【源头CRU 内部clk cpu 25M晶振 或者phy 25M晶振】），一种是我操作ok了你硬件不行产生偏差（主要是25CLK频偏），一种是我操作ok你没反应就像石头一样没有启动（phy没有启动，rest引脚或者vcc或者有些线没有接），一种是我操作有问题比如我被复用，
-一种是我操作ok你也ok但是有干扰（走线干扰，delay或者电压比如概率性获取不到ip或者丢包或者断线）
+总之是gmac操作phy的寄存器（rx clk是操作phy寄存器给出的，mdc clk是gmac给出的【源头CRU 内部clk cpu 25M晶振 或者phy 25M晶振】），
 
 clk数量多了（速率快干扰错），包括sdio phy uart降频 ，减少clk数量，降低看是否排除干扰
 ```
