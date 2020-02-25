@@ -40,6 +40,25 @@ regulator-always-on;
 cat /sys/kernel/debug/regulator/vdd_logic/vdd_logic/*
 
 echo 1050000 > /sys/kernel/debug/regulator/vdd_log/voltage
+
+logic电压是根据ddr的频率调整的，当前的ddr频率是多少？切换一下ddr频率看是否有变化
+
+
+root@rk3399_stbvr:/sys/kernel/debug/clk # cat clk_summary |grep ddr
+    clk_pvtm_ddr                          0            0    24000000          0 0  
+          pclk_ddr                        1            1   200000000          0 0  
+             pclk_ddr_sgrf                0            0   200000000          0 0  
+             pclk_ddr_mon                 0            0   200000000          0 0  
+          clk_ddrc_gpll_src               0            0   800000000          0 0  
+          clk_ddrc_dpll_src               1            1   792000000          0 0  
+             sclk_ddrc                    1            1   792000000          0 0  
+          clk_ddrc_bpll_src               0            0   408000000          0 0  
+          clk_ddrc_lpll_src               0            0   408000000          0 0 
+
+ddr 800M,vdd_log为0.9V，arch/arm64/boot/dts/rockchip/rk3399-opp.dtsi里面dmc_opp_table，改800M对应的电压opp-microvolt
+         opp-800000000 {
+             opp-hz = /bits/ 64 <800000000>;
+             opp-microvolt = <900000>;
 ```
 
 3、上行或者下行带宽比较低，和CPU和ddr关系比较大，可以调整一下参数和测试看看，最好是将上行带宽高的dts配置和以太网驱动移植过去
