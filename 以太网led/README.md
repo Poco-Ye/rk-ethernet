@@ -8,11 +8,16 @@ led是连在phy上面的，有几个led, led_speed100 led_link led_speed10 led_d
 
 kernel_4.4_rk322x_phy_led_control.patch 内部phy控制	
 
+
+这个kernel3.10的
+kernel/drivers/net/ethernet/rockchip/gmac
 phy_led_ctrl.diff	 stmmac_main.c(可一起给客户) 这个是主要gmac 接phy的控制  rtl8211e, rtl8201f, dp84838三个phy兼容的补丁
 
 
-
-可以参考Phy手册
+kernel4.4的没有patch
+kernel/drivers/net/ethernet/stmicro/stmmac
+可以先提供以太网排查.txt
+可以参考Phy手册 参考Phy手册 参考Phy手册先自己写一下寄存器，再看着3.10 patch自己写
 
 
 
