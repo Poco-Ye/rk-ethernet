@@ -182,6 +182,24 @@ cat phy_registers
 第三种是休眠唤醒之后或者长时间概率性，解决：disable eee patch可能是phy的原因节能标准不一致，确认logic电压，还不行ifconfig eth0 down/up 补丁 
 
 ```
+21、唤醒后获取不了ip
+```
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index a534672d0955..e60d34e294ad 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -3142,6 +3142,10 @@ int stmmac_resume(struct device *dev)
+if (priv->phydev)
+phy_start(priv->phydev);
+
++ stmmac_release(ndev);
++ msleep(100);
++ stmmac_open(ndev);
++
+return 0;
+}
+EXPORT_SYMBOL_GPL(stmmac_resume);
+```
 
 ----------------------------------------------------------------
 
