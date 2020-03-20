@@ -179,7 +179,7 @@ cat phy_registers
 ```
 第一种是开关机，解决：确认reset引脚先拉低延时再拉高延时
 第二种是不断插拔，解决：确认一下logic电压，tx rx delay修改吞吐测试，io电流加大，dhcp延时加一下，或者是变压器硬件的原因
-第三种是休眠唤醒之后或者长时间概率性，解决：disable eee patch可能是phy的原因节能标准不一致，确认logic电压，还不行ifconfig eth0 down/up 补丁 
+第三种是休眠唤醒之后或者长时间概率性，解决：disable eee patch可能是phy的原因节能标准不一致，确认logic电压，驱动唤醒函数，还不行ifconfig eth0 down/up 补丁 
 
 ```
 21、唤醒后获取不了ip
