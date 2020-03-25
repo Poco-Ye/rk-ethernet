@@ -200,6 +200,20 @@ return 0;
 }
 EXPORT_SYMBOL_GPL(stmmac_resume);
 ```
+22、用stmicro驱动时修改最大速率限制
+```
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -229,7 +229,7 @@
+        pinctrl-0 = <&rgmii_pins>;
+        tx_delay = <0x30>;
+        rx_delay = <0x10>;
+-       max-speed = <100>;
++       max-speed = <1000>;
+        status = "okay";
+ };
+```
+
 
 ----------------------------------------------------------------
 
