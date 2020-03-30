@@ -22,7 +22,7 @@ clk数量多了（速率快干扰错），包括sdio phy uart降频 ，减少clk
 对于这种问题，处理办法是，把DHCP的超时时间增大。目前的dhcp超时时间是30s，补丁把超时时间增大到90s。 插拔网卡出现概率性性获取不了ip
 89785  参考 把超时时间增大到90s.patch
 ```
-2、也测量一下cpu logci 电压 看一下dts上面的PMU的配置 正常是1.05v左右
+2、也测量一下cpu logic 电压 看一下dts上面的PMU的配置 正常是1.05v左右
 ```
 regulators {
 compatible = "simple-bus";
