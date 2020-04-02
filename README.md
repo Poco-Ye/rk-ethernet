@@ -213,6 +213,23 @@ EXPORT_SYMBOL_GPL(stmmac_resume);
         status = "okay";
  };
 ```
+23、uboot以太网
+```
+u-boot/drivers/net
+designware.o  gmac_rockchip.o
+
+CONFIG_DM_ETH=y
+CONFIG_ETH_DESIGNWARE=y
+CONFIG_GMAC_ROCKCHIP=y
+CONFIG_DM_REGULATOR=y
+CONFIG_DM_GPIO=y
+```
+
+
+
+
+
+
 
 
 ----------------------------------------------------------------
