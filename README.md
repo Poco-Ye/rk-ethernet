@@ -66,7 +66,28 @@ sclk_ddrc就是DDR的频率
 cat /sys/kernel/debug/opp/opp_summary
 cd /sys/class/devfreq/dmc/
 echo userspace > governor
-echo 800000000 > userspace/set_freq                        
+echo 800000000 > userspace/set_freq     
+
+
+ddr频率对以太网有影响，考虑到休眠变频的影响或者本身上行低
+&dmc {
+        status = "okay";
+        center-supply = <&vdd_center>;
+        upthreshold = <40>;
+        downdifferential = <20>;
+        system-status-freq = <
+                /*system status         freq(KHz)*/
+                SYS_STATUS_NORMAL       800000
+                SYS_STATUS_REBOOT       800000
+                SYS_STATUS_SUSPEND      800000
+                SYS_STATUS_VIDEO_1080P  800000
+                SYS_STATUS_VIDEO_4K     800000
+                SYS_STATUS_VIDEO_4K_10B 800000
+                SYS_STATUS_PERFORMANCE  800000
+                SYS_STATUS_BOOST        800000
+                SYS_STATUS_DUALVIEW     800000
+                SYS_STATUS_ISP          800000
+        >;
 ```
 
 3、上行或者下行带宽比较低，调试相关delay和硬件没有用，和TX RX CLK息息相关
