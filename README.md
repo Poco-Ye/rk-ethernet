@@ -43,7 +43,6 @@ echo 1050000 > /sys/kernel/debug/regulator/vdd_log/voltage
 
 logic电压是根据ddr的频率调整的，当前的ddr频率是多少？切换一下ddr频率看是否有变化
 
-
 root@rk3399_stbvr:/sys/kernel/debug/clk # cat clk_summary |grep ddr
     clk_pvtm_ddr                          0            0    24000000          0 0  
           pclk_ddr                        1            1   200000000          0 0  
@@ -59,6 +58,15 @@ ddr 800M,vdd_log为0.9V，arch/arm64/boot/dts/rockchip/rk3399-opp.dtsi里面dmc_
          opp-800000000 {
              opp-hz = /bits/ 64 <800000000>;
              opp-microvolt = <900000>;
+     
+TX上不去是DDR不够，定频到800M，TX就上去了
+驱动强度的还是改一下
+cat clk_summary |grep ddr
+sclk_ddrc就是DDR的频率
+cat /sys/kernel/debug/opp/opp_summary
+cd /sys/class/devfreq/dmc/
+echo userspace > governor
+echo 800000000 > userspace/set_freq                        
 ```
 
 3、上行或者下行带宽比较低，调试相关delay和硬件没有用，和TX RX CLK息息相关
