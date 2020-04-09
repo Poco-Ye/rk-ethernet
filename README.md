@@ -266,6 +266,13 @@ ret = enable_irq_wake(irq->irq);
 唤不醒先断开负载，对比一下IO DOMIN和 VDDIO是否匹配，不行也休眠模块的坑
 ```
 
+25、推流卡顿
+```
+关掉TX的时候的checksum
+ethtool -K eth0 tx-checksum-ipv4 off
+ethtool -K eth0 tx-checksum-ipv6 off
+```
+
 
 
 
