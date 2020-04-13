@@ -104,6 +104,7 @@ ddr频率对以太网有影响，考虑到休眠变频的影响或者本身上�
                                         /* mac_txclk */
 -                                       <3 17 RK_FUNC_1 &pcfg_pull_none_13ma>,
 +                                       <3 17 RK_FUNC_1 &pcfg_pull_none_19ma>,
+一般设置tx0~3 tx clk tx en 6个脚到19ma
 ```
 4、设置静态
 ```
