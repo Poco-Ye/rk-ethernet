@@ -273,7 +273,21 @@ ret = enable_irq_wake(irq->irq);
 ethtool -K eth0 tx-checksum-ipv4 off
 ethtool -K eth0 tx-checksum-ipv6 off
 ```
+26、delay确认
+```
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+@@ -418,6 +419,8 @@ static void rk3288_set_to_rgmii(struct rk_priv_data *bsp_priv,
+                return;
+        }
 
++       printk("%s tx_delay=%x rx_delay=%x\n",__func__,tx_delay,rx_delay);
++       
+        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+                     RK3288_GMAC_PHY_INTF_SEL_RGMII |
+                     RK3288_GMAC_RMII_MODE_CLR);
+@@ -1570,6 +1573,15 @@ static int rk_gmac_resume(struct device *dev)
+```
 
 
 
