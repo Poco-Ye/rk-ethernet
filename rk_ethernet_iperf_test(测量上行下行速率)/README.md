@@ -13,7 +13,7 @@
 
 1) PC运行：
 
-    iperf -c x.x.x.x -i 1 -w 1M -t 60
+    iperf -c x.x.x.x -i 1 -w 1M -t 60    //每1s报告一次  60s得出平均结果 TCP窗口为1M
     
     其中x.x.x.x为MID的IP地址
 
@@ -41,6 +41,19 @@
 
 
 --------------------------
+
+
+-w n[KM]  指定 TCP window size (2~256KB)
+-l n[KM] 指定 read/write buffer 大小(預設為 8k)
+-Pn (大寫的P) client 端指定同時 (parallel) 跑幾個的 threads
+
+iperf -s -w 256k -l 64k
+
+iperf -c 192.12.1.2 -t 10 -w 256k -i 5 -l 64k -P4
+
+
+
+
 
 
 通用参数
