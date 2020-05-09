@@ -295,7 +295,11 @@ ethtool -K eth0 tx-checksum-ipv6 off
                      RK3288_GMAC_RMII_MODE_CLR);
 @@ -1570,6 +1573,15 @@ static int rk_gmac_resume(struct device *dev)
 ```
-
+27、以太网MAC地址ieee申请
+```
+一般卖到国外才需要申请
+http://blog.sina.com.cn/s/blog_7d02693c0102v77o.html
+```
 
 
 
