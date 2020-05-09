@@ -117,7 +117,7 @@ ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
 用ip route
 ip addr add 192.168.1.100/24 dev eth0
 ip link set dev eth0 up
-echo "nameserver 8.8.8.8" > /etc/resolv.conf或者ndc resolver setnetdns wlan0 "" 8.8.8.8 8.8.4.4
+echo "nameserver 8.8.8.8" > /etc/resolv.conf或者ndc resolver setnetdns eth0 "" 8.8.8.8 8.8.4.4
 ip route add default via 192.168.1.1 dev eth0
 
 ```
