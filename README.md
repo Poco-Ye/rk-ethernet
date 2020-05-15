@@ -113,6 +113,11 @@ ifconfig eth0 192.168.1.100 broadcast 192.168.1.255 netmask 255.255.255.0 up
 单网卡添加多个IP地址
 ifconfig eth0:0 192.168.1.100 netmask 255.255.255.0 up
 ifconfig eth0:1 192.168.2.100 netmask 255.255.255.0 up
+若转换不了域名  主要是域名问题
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+或者
+ndc resolver setnetdns eth0 "" 8.8.8.8
+
 
 用ip route
 ip addr add 192.168.1.100/24 dev eth0
