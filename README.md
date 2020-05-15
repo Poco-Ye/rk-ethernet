@@ -305,6 +305,14 @@ ethtool -K eth0 tx-checksum-ipv6 off
 一般卖到国外才需要申请
 http://blog.sina.com.cn/s/blog_7d02693c0102v77o.html
 ```
+28、以太网probe
+```
+4.4
+stmmac_pltfr_probe
+
+3.10
+rk_gmac_probe
+```
 
 
 
