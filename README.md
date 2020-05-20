@@ -37,7 +37,11 @@ regulator-always-on;
 };
 };
 
-cat /sys/kernel/debug/regulator/vdd_logic/vdd_logic/*
+PMU的电压输出在sys/kernel/debug/regulator/
+这里可以手动调试一下
+
+cat /sys/kernel/debug/regulator/vdd_logic/*
+cat /sys/kernel/debug/regulator/vdd_log/*
 
 echo 1050000 > /sys/kernel/debug/regulator/vdd_log/voltage
 
