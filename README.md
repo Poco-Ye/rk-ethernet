@@ -285,7 +285,8 @@ ret = enable_irq_wake(irq->irq);
 
 25、推流卡顿
 ```
-关掉TX的时候的checksum
+ethtool -k eth0 查看一下
+关掉TX的时候的checksum，关闭硬件校验
 ethtool -K eth0 tx-checksum-ipv4 off
 ethtool -K eth0 tx-checksum-ipv6 off
 ```
@@ -317,7 +318,12 @@ stmmac_pltfr_probe
 3.10
 rk_gmac_probe
 ```
-
+28、endpoint
+```
+iperf -c 192.168.32.252 -i 1 -t 99 -d
+-d 同时进行双向传输测试,双向能同时到800M以上, 总吞吐量是两条流相加，有可能跟工具有关系。Marvell1512 导致16%CPU挂满，很少见
+用endpoint iocharoit 测试
+```
 
 
 ----------------------------------------------------------------
