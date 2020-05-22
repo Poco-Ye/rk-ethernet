@@ -120,7 +120,7 @@ clk out
 };
 
 
-还有或者有可能要改一下parents，主要修改的SCLK_GMAC
+还有或者有可能要改一下parents，主要修改的SCLK_GMAC，这个好像有问题
 
 &gmac {
 phy-supply = <&vcc_phy>;
@@ -132,6 +132,57 @@ assigned-clock-parents = <&cru SCLK_GMAC>;
 snps,reset-delays-us = <0 50000 50000>;
 status = "okay";
 };
+
+这个是3368的挂在CPLL下面的，这个用了好像没有问题
+--- a/arch/arm64/boot/dts/rockchip/rk3368-808.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3368-808.dtsi
+@@ -52,12 +52,12 @@
+                io-channels = <&saradc 2>;
+        };
+
+-       ext_gmac: gmac-clk {
++       /*ext_gmac: gmac-clk {
+                compatible = "fixed-clock";
+                clock-frequency = <125000000>;
+                clock-output-names = "ext_gmac";
+                #clock-cells = <0>;
+-       };
++       };*/
+
+        vcc_phy: vcc-phy-regulator {
+                compatible = "regulator-fixed";
+@@ -825,13 +825,14 @@
+ &gmac {
+        phy-supply = <&vcc_phy>;
+        phy-mode = "rgmii";
+-       clock_in_out = "input";
++       clock_in_out = "output";
+        snps,reset-gpio = <&gpio3 11 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        snps,reset-delays-us = <0 10000 50000>;
+-       assigned-clocks = <&cru SCLK_MAC>;
+-       assigned-clock-parents = <&ext_gmac>;
++    assigned-clocks = <&cru SCLK_MAC>, <&cru SCLK_RMII_SRC>;
++    assigned-clock-rates = <125000000>;
++    assigned-clock-parents = <&cru PLL_CPLL>, <&cru SCLK_MAC>;
+        pinctrl-0 = <&rgmii_pins>;
+        tx_delay = <0x28>;
+        rx_delay = <0x11>;
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3368.dtsi b/arch/arm64/boot/dts/rockchip/rk3368.dtsi
+index b8d9a44..0b46eee 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3368.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3368.dtsi
+@@ -1162,7 +1162,7 @@
+                        <&cru ACLK_CCI_PRE>;
+                assigned-clock-rates =
+                        <816000000>, <816000000>,
+-                       <576000000>, <400000000>,
++                       <576000000>, <1000000000>,
+                        <300000000>, <300000000>,
+                        <150000000>, <150000000>,
+                        <75000000>, <75000000>,
+
 
 
 ```
