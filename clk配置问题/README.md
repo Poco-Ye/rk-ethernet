@@ -211,6 +211,17 @@ index b8d9a44..0b46eee 100644
 
 还不行rmii的驱动强度调大
 
+或者自行操刀改cru节点 &cru
+#include "px30.dtsi"
+
+ &cru {
+     assigned-clocks = <&cru PLL_NPLL>;
+     assigned-clock-rates = <1040000000>;
+ };
+
+
+
 ```
+
 
 
