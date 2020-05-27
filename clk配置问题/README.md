@@ -211,12 +211,33 @@ index b8d9a44..0b46eee 100644
 
 还不行rmii的驱动强度调大
 
-或者自行操刀改cru节点 &cru
+kernel/drivers/clk/rockchip/clk-px30.c
+修改clk方法：
+
+	COMPOSITE(SCLK_GMAC_SRC, "clk_gmac_src", mux_gpll_cpll_npll_p, 0,
+			PX30_CLKSEL_CON(22), 14, 2, MFLAGS, 8, 5, DFLAGS,
+			PX30_CLKGATE_CON(7), 11, GFLAGS),
+	MUX(SCLK_GMAC, "clk_gmac", mux_gmac_p,  CLK_SET_RATE_PARENT,
+			PX30_CLKSEL_CON(23), 6, 1, MFLAGS),
+
+
+&gmac {
+phy-supply = <&vcc_phy>;
+clock_in_out = "output";
+snps,reset-gpio = <&gpio2 13 GPIO_ACTIVE_LOW>;
+snps,reset-active-low;
+assigned-clocks = <&cru SCLK_GMAC_SRC>, <&cru SCLK_GMAC>;
+assigned-clock-rates = <50000000>;
+assigned-clock-parents = <&cru PLL_NPLL>, <&cru SCLK_GMAC_SRC>;
+snps,reset-delays-us = <0 50000 50000>;
+status = "okay";
+};
+
 #include "px30.dtsi"
 
  &cru {
      assigned-clocks = <&cru PLL_NPLL>;
-     assigned-clock-rates = <1040000000>;
+     assigned-clock-rates = <1000000000>;
  };
 
 
