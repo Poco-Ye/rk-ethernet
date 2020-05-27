@@ -239,7 +239,9 @@ status = "okay";
      assigned-clocks = <&cru PLL_NPLL>;
      assigned-clock-rates = <1000000000>;
  };
-
+ 
+经过排查发现，是由于rtl8201的RXD3/CLK_CT引脚没接对导致的，原本接地配置成RMII REF_CLK Output mode了。
+硬件上改成拉高，配置成Input mode就可以了。
 
 
 ```
