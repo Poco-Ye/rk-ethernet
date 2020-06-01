@@ -318,11 +318,53 @@ stmmac_pltfr_probe
 3.10
 rk_gmac_probe
 ```
-28、endpoint
+29、endpoint
 ```
 iperf -c 192.168.32.252 -i 1 -t 99 -d
 -d 同时进行双向传输测试,双向能同时到800M以上, 总吞吐量是两条流相加，有可能跟工具有关系。Marvell1512 导致16%CPU挂满，很少见
 用endpoint iocharoit 测试
+```
+30、interrupts,CPU资源不够导致iperf测试吞吐低
+```
+cat /proc/interrupts
+          CPU0       CPU1       CPU2       CPU3       CPU4         CPU5
+24:      84760          0          0          0        0              0     GICv3  44 Level     eth0
+echo 4 > /proc/irq/24/smp_affinity_list(换挂到CPU4)
+24:      84760          0          0          0       393058          0     GICv3  44 Level     eth0
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index abde6c5..791c32c 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -2833,8 +2833,10 @@ int stmmac_dvr_probe(struct device *device,
+ 		     struct stmmac_resources *res)
+ {
+ 	int ret = 0;
++	int cpu_id =5;
+ 	struct net_device *ndev = NULL;
+ 	struct stmmac_priv *priv;
++	struct cpumask cpumask;
+ 
+ 	ndev = alloc_etherdev(sizeof(struct stmmac_priv));
+ 	if (!ndev)
+@@ -2855,7 +2857,11 @@ int stmmac_dvr_probe(struct device *device,
+ 	priv->dev->irq = res->irq;
+ 	priv->wol_irq = res->wol_irq;
+ 	priv->lpi_irq = res->lpi_irq;
+-
++	
++	cpumask_clear(&cpumask);
++	cpumask_set_cpu(cpu_id,&cpumask);
++	irq_set_affinity(priv->dev->irq,&cpumask);
++	
+ 	if (res->mac)
+ 		memcpy(priv->dev->dev_addr, res->mac, ETH_ALEN);
+ 
+ 
+nice -n -20 iperf -c 192.168.30.100 -i 1 -t 5 -w 1M -d -P8
+
+可以直接测好丢过去，硬要他们自己解自己系统资源问题，就怪他们
+
 ```
 
 
