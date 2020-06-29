@@ -372,6 +372,12 @@ nice -n -20 iperf -c 192.168.30.100 -i 1 -t 5 -w 1M -d -P8
 
 可以理解为写delay让txc(clk)和txd(data)相位不断的靠近，具体效果还是需要用工具测量吞吐
 ```
+32、添加以太网选项
+```
+redmine 249892提到本条redmine需要mid的以太网设置补丁，请参考附件zip。
+其中，device\rockchip\rk3399\下的宏开启补丁，如果是其他产品，请根据对应产品在device\rockchip\XXX\目录打上
+补丁完全打上后，可以在settings > network&intent 看到 ethernet选项
+```
 
 
 ----------------------------------------------------------------
