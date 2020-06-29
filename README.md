@@ -378,6 +378,21 @@ redmine 249892提到本条redmine需要mid的以太网设置补丁，请参考�
 其中，device\rockchip\rk3399\下的宏开启补丁，如果是其他产品，请根据对应产品在device\rockchip\XXX\目录打上
 补丁完全打上后，可以在settings > network&intent 看到 ethernet选项
 ```
+33、PX30以太网配置
+```
+ &gmac {
+     phy-supply = <&vcc_phy>;
+     assigned-clocks = <&cru SCLK_GMAC>;
+     assigned-clock-parents = <&gmac_clkin>;
+     clock_in_out = "input";
+     pinctrl-names = "default";
+     pinctrl-0 = <&rmii_pins &mac_refclk>;
+     snps,reset-gpio = <&gpio2 13 GPIO_ACTIVE_LOW>;
+     snps,reset-active-low;
+     snps,reset-delays-us = <0 50000 50000>;
+     status = "okay";
+ };
+```
 
 
 ----------------------------------------------------------------
