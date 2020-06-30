@@ -244,7 +244,7 @@ status = "okay";
 硬件上改成拉高，配置成Input mode就可以了。
 
 
-可以直接看clk设置的寄存器，对着datashell来设置
+可以直接看clk设置的寄存器，对着datasheet来设置
 CRU
 FF76_0000
 CRU_CLKSEL_CON20
