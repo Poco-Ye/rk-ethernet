@@ -244,6 +244,20 @@ status = "okay";
 硬件上改成拉高，配置成Input mode就可以了。
 
 
+可以直接看clk设置的寄存器，对着datashell来设置
+CRU
+FF76_0000
+CRU_CLKSEL_CON20
+Address: Operational Base + offset (0x0150)
+Internal clock select and divide register20
+
+15:14   RW 0x2
+clk_gmac_pll_sel  clk_gmac  clock source select control register
+2'b00:CPLL
+2'b01:GPLL
+2'b1x:NPLL
+
+
 ```
 
 
