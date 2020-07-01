@@ -261,4 +261,31 @@ clk_gmac_pll_sel  clk_gmac  clock source select control register
 ```
 
 
+```
+3368的clk配置
+clk: failed to reparent mac_clk to clkin_gmac: -22
+
+     ext_gmac: gmac-clk {
+         compatible = "fixed-clock";
+         clock-frequency = <125000000>;
+         clock-output-names = "ext_gmac";
+         #clock-cells = <0>;
+     };
+     
+ &gmac {
+     status = "okay";
+     phy-supply = <&vcc_lan>;
+     phy-mode = "rgmii";
+     clock_in_out = "input";
+     assigned-clocks = <&cru SCLK_MAC>;
+     assigned-clock-parents = <&ext_gmac>;
+     pinctrl-names = "default";
+     pinctrl-0 = <&rgmii_pins>;
+     tx_delay = <0x30>;
+     rx_delay = <0x10>;
+ };
+
+
+```
+
 
