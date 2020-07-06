@@ -1,0 +1,132 @@
+这种50M就是从外部phy产生
+&gmac {
+        phy-supply = <&vcc_phy>;
++        phy-mode = "rmii";
++        clock_in_out = "input";
+        snps,reset-gpio = <&gpio0 10 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        /* Reset time is 20ms, 100ms for rtl8211f */
+        snps,reset-delays-us = <0 20000 100000>;
++        assigned-clocks = <&cru SCLK_GMAC_RX_TX>, <&cru SCLK_GMAC>;
++        assigned-clock-parents = <&cru SCLK_GMAC_RMII_SPEED>， <&gmac_clkin>;
++        assigned-clock-rates = <0>, <50000000>;
+        tx_delay = <0x50>;
+        rx_delay = <0x3a>;
+};
+
+
+这种50M是内部产生的
+&gmac {
+        phy-supply = <&vcc_phy>;
++        phy-mode = "rmii";
++        clock_in_out = "output";
+        snps,reset-gpio = <&gpio0 10 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        /* Reset time is 20ms, 100ms for rtl8211f */
+        snps,reset-delays-us = <0 20000 100000>;
++        assigned-clocks = <&cru SCLK_GMAC_RX_TX>, <&cru SCLK_GMAC>;
++        assigned-clock-parents = <&cru SCLK_GMAC_RMII_SPEED>， <&cru SCLK_GMAC_SRC>;
++        assigned-clock-rates = <0>, <50000000>;
+        tx_delay = <0x50>;
+        rx_delay = <0x3a>;
+};
+hcq@ubuntu:~/1808/rk1808_linux_v1.00_20181227/kernel/arch/arm64/boot/dts/rockchip$ git diff rk1808.dtsi
+diff --git a/arch/arm64/boot/dts/rockchip/rk1808.dtsi b/arch/arm64/boot/dts/rockchip/rk1808.dtsi
+index 28d3683..eadb919 100644
+--- a/arch/arm64/boot/dts/rockchip/rk1808.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk1808.dtsi
+@@ -1798,6 +1798,7 @@
+                compatible = "rockchip,rk1808-gmac";
+                reg = <0x0 0xffdd0000 0x0 0x10000>;
+                rockchip,grf = <&grf>;
++               rockchip,cru = <&cru>;
+                interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
+                interrupt-names = "macirq";
+                clocks = <&cru SCLK_GMAC>, <&cru SCLK_GMAC_RX_TX>,
+@@ -1810,7 +1811,7 @@
+                              "pclk_mac", "clk_mac_speed";
+                phy-mode = "rgmii";
+                pinctrl-names = "default";
+-               pinctrl-0 = <&rgmii_pins>;
++               pinctrl-0 = <&rmii_pins>;
+                resets = <&cru SRST_GAMC_A>;
+                reset-names = "stmmaceth";
+                /* power-domains = <&power RK1808_PD_GMAC>; */
+				
+
+
+
+=========================================================================================================
+请用命令读CRU_CLKSEL_CON27
+io -4 -r 0xFF35016c
+
+output 配制正常应该是 0x313 
+input 配制正常应该是 0x312
+
+如果不是上面值，可考虑在驱动中修改CRU_CLKSEL_CON27
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+index ea94f52..dbcb59c 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+@@ -71,6 +71,7 @@ struct rk_priv_data {
+ 	int tx_delay;
+ 	int rx_delay;
+ 
++	void __iomem *cru_base;
+ 	struct regmap *grf;
+ };
+ 
+@@ -144,7 +145,7 @@ static const struct rk_gmac_ops px30_ops = {
+ 
+ #define RK1808_GRF_GMAC_CON0		0X0900
+ #define RK1808_GRF_GMAC_CON1		0X0904
+-
++#define RK1808_CRU_CLKSEL27_CON 0x016c
+ /* RK1808_GRF_GMAC_CON0 */
+ #define RK1808_GMAC_CLK_RX_DL_CFG(val)	HIWORD_UPDATE(val, 0x7F, 8)
+ #define RK1808_GMAC_CLK_TX_DL_CFG(val)	HIWORD_UPDATE(val, 0x7F, 0)
+@@ -186,6 +187,8 @@ static void rk1808_set_to_rgmii(struct rk_priv_data *bsp_priv,
+ static void rk1808_set_to_rmii(struct rk_priv_data *bsp_priv)
+ {
+ 	struct device *dev = &bsp_priv->pdev->dev;
++	int ret;
++	unsigned int value;
+ 
+ 	if (IS_ERR(bsp_priv->grf)) {
+ 		dev_err(dev, "%s: Missing rockchip,grf property\n", __func__);
+@@ -194,6 +197,22 @@ static void rk1808_set_to_rmii(struct rk_priv_data *bsp_priv)
+ 
+ 	regmap_write(bsp_priv->grf, RK1808_GRF_GMAC_CON1,
+ 		     RK1808_GMAC_PHY_INTF_SEL_RMII);
++
++
++	if (IS_ERR(bsp_priv->cru_base)) {
++		dev_err(dev, "Missing rockchip,cru property\n");
++		return;
++	}
++	if(bsp_priv->clock_input){
++		regmap_write(bsp_priv->cru_base, RK1808_CRU_CLKSEL27_CON,0x313);
++	}else{
++
++	  regmap_write(bsp_priv->cru_base, RK1808_CRU_CLKSEL27_CON,0x312);
++	}
++	ret= regmap_read(bsp_priv->cru_base, RK1808_CRU_CLKSEL27_CON,&value);
++	if (ret < 0)  dev_err(dev,"read 0x016c err ret=0x%x\n",ret);
++	dev_err(dev,"read 0x016c =0x%x\n ",value);
++
+ }
+ 
+ static void rk1808_set_rgmii_speed(struct rk_priv_data *bsp_priv, int speed)
+@@ -1464,6 +1483,12 @@ static struct rk_priv_data *rk_gmac_setup(struct platform_device *pdev,
+ 		bsp_priv->rx_delay = value;
+ 	}
+ 
++	bsp_priv->cru_base =syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,cru");
++	if (IS_ERR(bsp_priv->cru_base)) {
++		dev_err(dev, "can't find gmac cru_base property\n");
++		bsp_priv->cru_base = NULL;
++	}
++
+ 	bsp_priv->grf = syscon_regmap_lookup_by_phandle(dev->of_node,
+ 							"rockchip,grf");
+ 
