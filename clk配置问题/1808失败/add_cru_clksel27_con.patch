@@ -60,8 +60,8 @@ index 28d3683..eadb919 100644
 请用命令读CRU_CLKSEL_CON27
 io -4 -r 0xFF35016c
 
-output 配制正常应该是 0x313 
-input 配制正常应该是 0x312
+input 配制正常应该是 0x313 
+output 配制正常应该是 0x312
 
 如果不是上面值，可考虑在驱动中修改CRU_CLKSEL_CON27
 diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
