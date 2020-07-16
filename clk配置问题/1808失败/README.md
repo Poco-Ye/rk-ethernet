@@ -11,7 +11,7 @@ io -4 -l 0x10 0xfe000900
 以太网gmac配置看这些寄存器
 
 
-这个patch还不行就加上
+这个patch还不行就加上，插上网线可能会有50M变成25M的
 +	clocks = <&cru SCLK_GMAC>, <&cru SCLK_GMAC_RX_TX>,
 +		 <&cru SCLK_GMAC_RX_TX>, <&cru SCLK_GMAC_REF>,
 +		 <&cru SCLK_GMAC_REFOUT>, <&cru ACLK_GMAC>,
