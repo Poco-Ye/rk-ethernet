@@ -1,5 +1,5 @@
 ```
-1、IO驱动强度改一下
+1、IO驱动强度改一下（可以用IO指令 GRF_GPIO3A_E01 Address: Operational Base + offset (0x0e110) GPIO3A drive strength control）
 2、DDR频率不够
 TX上不去是DDR不够，定频到800M，TX就上去了
 驱动强度的还是改一下
