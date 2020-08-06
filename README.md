@@ -289,12 +289,9 @@ ethtool -k eth0 查看一下
 关掉TX的时候的checksum，关闭硬件校验
 ethtool -K eth0 tx-checksum-ipv4 off
 ethtool -K eth0 tx-checksum-ipv6 off
-
-ethtool -k eth0
-
-ethtool -K eth0 tx-checksum off
-
-ethtool -K eth0 tso off
+关闭tso
+ethtool ‐K eth0 tx‐tcp‐segmentation off
+ethtool ‐K eth0 tx‐tcp6‐segmentation off
 ```
 26、delay确认
 ```
