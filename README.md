@@ -292,6 +292,18 @@ ethtool -K eth0 tx-checksum-ipv6 off
 关闭tso
 ethtool ‐K eth0 tx‐tcp‐segmentation off
 ethtool ‐K eth0 tx‐tcp6‐segmentation off
+
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -3151,7 +3151,7 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+
+        ndev->netdev_ops = &stmmac_netdev_ops;
+
+-       ndev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
++       ndev->hw_features = NETIF_F_SG | NETIF_F_IPV6_CSUM |
+                            NETIF_F_RXCSUM;
+        ndev->features |= ndev->hw_features | NETIF_F_HIGHDMA;
+        ndev->watchdog_timeo = msecs_to_jiffies(watchdog);
 ```
 26、delay确认
 ```
