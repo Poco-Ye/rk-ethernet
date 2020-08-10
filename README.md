@@ -143,6 +143,8 @@ ip route add default via 192.168.1.1 dev eth0
 ```
 tcpdump -i eth0 -s 0 -w /data/snf.pcap
 tcpdump -i wlan0 -s 0 -w /data/wlan.pcap
+，抓p2p，关掉wifi，抓一下正常和异常的log
+tcpdump -i any -s 0 -w /data/tcpdump_log.pcap
 ```
 8、过滤
 ```
