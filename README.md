@@ -419,6 +419,20 @@ redmine 249892提到本条redmine需要mid的以太网设置补丁，请参考�
 ```
 mac clk不精
 ```
+36、NAT转发
+```
+如果你是wlan0 上外网，eth1通过NAT共享wlan0，只需要加enableNat 就可以了，当然首先要保证pc 与3399 eth1可以ping 通。 不需要用脚本，直接看日志即可。
+
+        private void startDhcpServer() {
+                if (DBG) Log.d(TAG, "startDhcpServer");
+                String startIp = SystemProperties.get("persist.dhcpserver.start", "192.168.1.150");
+                String endIp = SystemProperties.get("persist.dhcpserver.end", "192.168.1.250");
+                String[] dhcpRange = {startIp, endIp};
+                try {
+                        mNMService.tetherInterface(mIface);
+                        mNMService.startTethering(dhcpRange);
++            mNMService.enableNat("eth1","wlan0");
+```
 
 
 ----------------------------------------------------------------
