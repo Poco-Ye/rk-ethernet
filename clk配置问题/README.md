@@ -1,4 +1,10 @@
 ```
+ &cru {
+     assigned-clocks = <&cru PLL_NPLL>;
+     assigned-clock-rates = <1000000000>;
+ };
+
+
 3399的CRU寄存器在0xff760000
 
  cru: clock-controller@ff760000 {
