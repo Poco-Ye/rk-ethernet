@@ -1,3 +1,4 @@
+```
 #!/system/bin/sh
 
 
@@ -70,3 +71,21 @@ for option in ${OPTIONS:-restart}; do
                 ;;
         esac
 done
+
+
+```
+
+
+
+```
+logcat
+
+ifconfig -a
+
+ps -ef
+
+ip route
+
+iptables -vnL
+
+```
