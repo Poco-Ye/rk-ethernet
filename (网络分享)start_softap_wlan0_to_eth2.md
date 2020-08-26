@@ -3,7 +3,7 @@
 
 
 WAN=wlan0
-LAN=eth0
+LAN=eth2
 
 function start_softap(){
  
