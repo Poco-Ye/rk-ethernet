@@ -1,0 +1,124 @@
+sdk_project@aaaaa:~/9.0sdk/RK3126C_ANDROID9.0_SDK_V1.0_20190103/Rk3126C_Android_Pie_release_20190103/frameworks/base$ git diff   ./services/core/java/com/android/server/ConnectivityService.java
+diff --git a/services/core/java/com/android/server/ConnectivityService.java b/services/core/java/com/android/server/ConnectivityService.java
+index 6ef1c14..b3e17c5 100644
+--- a/services/core/java/com/android/server/ConnectivityService.java
++++ b/services/core/java/com/android/server/ConnectivityService.java
+@@ -208,6 +208,14 @@ public class ConnectivityService extends IConnectivityManager.Stub
+
+     private static final boolean LOGD_RULES = false;
+     private static final boolean LOGD_BLOCKED_NETWORKINFO = true;
++
++    // if true:
++    //    wifi and ethernet can coexist, if wifi and ethernet connect together, prefered to use ethernet
++    // if false:
++    //    wifi and ethernet can't coexist, if wifi and ethernet connect together, will tear down wifi
++    //    TODO: still have bug in this case to fix (like can't reconnect wifi when ethernet disconnect)
++    private static final boolean ENABLE_NETWORK_COEXIST = true;
++
+
+     // TODO: create better separation between radio types and network types
+
+@@ -5158,8 +5166,24 @@ public class ConnectivityService extends IConnectivityManager.Stub
+                 break;
+             }
+         }
++  if (ENABLE_NETWORK_COEXIST) {
++     log("Skip teardownUnneededNetwork: " + nai.name());
++     if (nai.getCurrentScore() > 0) {
++         try {
++             mNetd.removeInterfaceFromNetwork(nai.linkProperties.getInterfaceName(), nai.network.netId);
++             mNetd.addInterfaceToLocalNetwork(nai.linkProperties.getInterfaceName(), nai.linkProperties.getRoutes());
++             mLegacyTypeTracker.add(nai.networkInfo.getType(), nai);
++         } catch (RemoteException e) {
++             Log.e(TAG, "Failed to add iface to local network " + e);
++         }
++     }
++    } else{
++
++
+         nai.asyncChannel.disconnect();
+     }
++ }
++
+
+     private void handleLingerComplete(NetworkAgentInfo oldNetwork) {
+         if (oldNetwork == null) {
+@@ -5306,6 +5330,13 @@ public class ConnectivityService extends IConnectivityManager.Stub
+                     } else {
+                         if (VDBG) log("   accepting network in place of null");
+                     }
++                if (ENABLE_NETWORK_COEXIST) {
++                 try {
++                    mNetd.removeInterfaceFromLocalNetwork(newNetwork.linkProperties.getInterfaceName());
++                  } catch(RemoteException e) {}
++                     updateLinkProperties(newNetwork,null);
++                  }
++
+                     newNetwork.unlingerRequest(nri.request);
+                     setNetworkForRequest(nri.request.requestId, newNetwork);
+                     if (!newNetwork.addRequest(nri.request)) {
+@@ -5636,6 +5667,11 @@ public class ConnectivityService extends IConnectivityManager.Stub
+             // This has to happen after matching the requests, because callbacks are just requests.
+             notifyNetworkCallbacks(networkAgent, ConnectivityManager.CALLBACK_PRECHECK);
+         } else if (state == NetworkInfo.State.DISCONNECTED) {
++             if (ENABLE_NETWORK_COEXIST) {
++            try {
++                mNetd.removeInterfaceFromLocalNetwork(networkAgent.linkProperties.getInterfaceName());
++                } catch(RemoteException e) {}
++            }
+             networkAgent.asyncChannel.disconnect();
+             if (networkAgent.isVPN()) {
+                 synchronized (mProxyLock) {
+
+
+2）若需要wifi访问外网，以太网用于访问局域网，则打如下补丁：
+sdk_project@aaaaa:~/9.0sdk/RK3126C_ANDROID9.0_SDK_V1.0_20190103/Rk3126C_Android_Pie_release_20190103/frameworks/opt/net/ethernet$ git diff .
+diff --git a/java/com/android/server/ethernet/EthernetNetworkFactory.java b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+index b57a722..23086cb 100644
+--- a/java/com/android/server/ethernet/EthernetNetworkFactory.java
++++ b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+@@ -59,7 +59,7 @@ public class EthernetNetworkFactory extends NetworkFactory {
+     private final static String TAG = EthernetNetworkFactory.class.getSimpleName();
+     final static boolean DBG = true;
+
+-    private final static int NETWORK_SCORE = 70;
++    private final static int NETWORK_SCORE = 30;
+     private static final String NETWORK_TYPE = "Ethernet";
+
+
+
+3）共存且wifi优先级高时，若断开wifi后，设置界面以太网也显示未连接，或者先连接wifi后，再连接以太网时，以太网连接失败，则用下面补丁
+这个需要提供日志再看
+
+
+
+
+
+
+
+
+4) 分值
+sdk_project@aaaaa:~/9.0sdk/RK3126C_ANDROID9.0_SDK_V1.0_20190103/Rk3126C_Android_Pie_release_20190103/frameworks/base$ git diff  core/java/android/net/NetworkFactory.java
+diff --git a/core/java/android/net/NetworkFactory.java b/core/java/android/net/NetworkFactory.java
+index e2f8d1a..86e7d93 100644
+--- a/core/java/android/net/NetworkFactory.java
++++ b/core/java/android/net/NetworkFactory.java
+@@ -48,7 +48,7 @@ import java.io.PrintWriter;
+  **/
+ public class NetworkFactory extends Handler {
+     private static final boolean DBG = true;
+-    private static final boolean VDBG = false;
++    private static final boolean VDBG = true;
+
+     private static final int BASE = Protocol.BASE_NETWORK_FACTORY;
+     /**
+@@ -229,7 +229,7 @@ public class NetworkFactory extends Handler {
+
+     private void evalRequest(NetworkRequestInfo n) {
+         if (VDBG) log("evalRequest");
+-        if (n.requested == false && n.score < mScore &&
++        if (n.requested == false && 0 < mScore &&
+                 n.request.networkCapabilities.satisfiedByNetworkCapabilities(
+                 mCapabilityFilter) && acceptRequest(n.request, n.score)) {
+             if (VDBG) log("  needNetworkFor");
+
