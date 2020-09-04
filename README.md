@@ -129,6 +129,14 @@ ip link set dev eth0 up
 echo "nameserver 8.8.8.8" > /etc/resolv.conf或者ndc resolver setnetdns eth0 "" 8.8.8.8 8.8.4.4
 ip route add default via 192.168.1.1 dev eth0
 
+
+网关 网关 网关
+和IP 地址卵关系都没有
+
+route -n 
+route del default gw 192.168.1.1 dev eth0
+route add default gw 192.168.1.1 dev eth0 metric 99 
+
 ```
 5、cat /sys/devices/platform/fe300000.ethernet/net/eth0/carrier
 ```
