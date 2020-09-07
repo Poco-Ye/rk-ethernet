@@ -390,6 +390,12 @@ nice -n -20 iperf -c 192.168.30.100 -i 1 -t 5 -w 1M -d -P8
 
 可以直接测好丢过去，硬要他们自己解自己系统资源问题，就怪他们
 
+切换CPU core 中断验证。
+例子
+cat /proc/interrupts 查看相应中断号
+echo 2 > /proc/irq/51/smp_affinity_list //把中断放到cpu2上执行
+cat /proc/interrupts //查看记数
+
 ```
 31、delay的时间概念
 ```
