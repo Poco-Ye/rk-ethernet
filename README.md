@@ -448,6 +448,22 @@ mac clk不精
 +            mNMService.enableNat("eth1","wlan0");
 ```
 
+37、静态IP设置后，没插网线控制phy启动状态carrier为0
+```
+hcq@ubuntu:~/33997.1/kernel/drivers/net/ethernet/stmicro/stmmac$ git diff stmmac_main.c
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 58a490e..b14791b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -1855,7 +1855,7 @@ static int stmmac_open(struct net_device *dev)
+
+        napi_enable(&priv->napi);
+        netif_start_queue(dev);
+-
++       netif_carrier_off(dev);
+ #ifdef CONFIG_DWMAC_RK_AUTO_DELAYLINE
+        if (!priv->delayline_scanned) {
+```
 
 ----------------------------------------------------------------
 
