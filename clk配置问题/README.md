@@ -317,6 +317,28 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
                 status = "okay";
 };
 
+百兆输出
+
+&gmac {
+        phy-mode = "rmii";
+        clock_in_out = "output";
+
+        snps,reset-gpio = <&gpio3 RK_PA6 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        snps,reset-delays-us = <0 100000 100000>;
+
+        assigned-clocks = <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
+        assigned-clock-parents = <&cru CLK_GMAC_SRC_M0>, <&cru RMII_MODE_CLK>;
+        assigned-clock-rates = <50000000>;
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&rmiim0_pins &gmac_clk_m0_drv_level0_pins>;
+
+        phy-handle = <&phy>;
+        status = "okay";
+};
+
+
 
 ```
 
