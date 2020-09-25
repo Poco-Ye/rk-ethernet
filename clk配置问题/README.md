@@ -323,7 +323,7 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
         phy-mode = "rmii";
         clock_in_out = "output";
 
-        snps,reset-gpio = <&gpio3 RK_PA6 GPIO_ACTIVE_LOW>;
+        snps,reset-gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
         snps,reset-active-low;
         snps,reset-delays-us = <0 100000 100000>;
 
