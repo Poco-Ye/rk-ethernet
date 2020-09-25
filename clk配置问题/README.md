@@ -294,4 +294,30 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
 
 ```
 
+```
+1126_1109 
+1126_1109都是用同一份SDK
+
+百兆输入
+&gmac {
+                phy-mode = "rmii";
+                clock_in_out = "input";
+
+                snps,reset-gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+                snps,reset-active-low;
+                snps,reset-delays-us = <0 100000 100000>;
+
+                assigned-clocks = <&cru CLK_GMAC_RGMII_M0>,<&cru CLK_GMAC_SRC_M0>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
+                assigned-clock-rates = <0>,<0>, <50000000>;
+                assigned-clock-parents = <&gmac_clkin_m0>,<&cru CLK_GMAC_RGMII_M0>, <&cru CLK_GMAC_SRC_M0>, <&cru RMII_MODE_CLK>;
+
+                pinctrl-names = "default";
+                pinctrl-0 = <&rmiim0_pins &gmac_clk_m0_pins>;
+
+                status = "okay";
+};
+
+
+```
+
 
