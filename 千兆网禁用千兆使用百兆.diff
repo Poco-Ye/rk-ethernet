@@ -47,3 +47,41 @@ index 3657b4a..514b2d2 100644
 +    features &= ~ (SUPPORTED_1000baseT_Full | SUPPORTED_1000baseT_Half);
         phydev->supported = features;
         phydev->advertising = features;
+        
+        
+        
+        
+使用10M
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 8179727..1d54120 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -161,14 +161,14 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+ 
+ 	dev->dev.release = phy_device_release;
+ 
+-	dev->speed = 0;
+-	dev->duplex = -1;
++	dev->speed = SPEED_10;
++	dev->duplex = DUPLEX_FULL;
+ 	dev->pause = 0;
+ 	dev->asym_pause = 0;
+ 	dev->link = 1;
+ 	dev->interface = PHY_INTERFACE_MODE_GMII;
+ 
+-	dev->autoneg = AUTONEG_ENABLE;
++	dev->autoneg = AUTONEG_DISABLE;
+ 
+ 	dev->is_c45 = is_c45;
+ 	dev->addr = addr;
+@@ -1108,6 +1108,9 @@ int genphy_read_status(struct phy_device *phydev)
+ 		else
+ 			phydev->speed = SPEED_10;
+ 
++		
++		phydev->duplex = DUPLEX_FULL;
++		phydev->speed = SPEED_10;
+ 		phydev->pause = 0;
+ 		phydev->asym_pause = 0;
+ 	}
+
