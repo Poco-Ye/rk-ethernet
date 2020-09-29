@@ -465,6 +465,24 @@ index 58a490e..b14791b 100644
         if (!priv->delayline_scanned) {
 ```
 
+38、修改phy id
+```
+启动的第一步会去读phy id，可能有概率性获取不到的，先设置看是否有其它问题
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -325,6 +325,9 @@ static int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id,
+ {
+        int phy_reg;
+
++    *phy_id = 0x11223344;
++    return 0;
++
+        if (is_c45)
+                return get_phy_c45_ids(bus, addr, phy_id, c45_ids);
+                
+```
+
+
 ----------------------------------------------------------------
 
 
