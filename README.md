@@ -396,6 +396,37 @@ cat /proc/interrupts 查看相应中断号
 echo 2 > /proc/irq/51/smp_affinity_list //把中断放到cpu2上执行
 cat /proc/interrupts //查看记数
 
+或者将eth0 的中断平均到各个CPU
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 79b60aa..1e0fa6c 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -421,6 +421,12 @@ static void __init gic_dist_init(void)
+ 	affinity = gic_mpidr_to_affinity(cpu_logical_map(smp_processor_id()));
+ 	for (i = 32; i < gic_data.irq_nr; i++)
+ 		gic_write_irouter(affinity, base + GICD_IROUTER + i * 8);
++
++	/* irq 44 routed to all cpus  */
++	affinity = affinity | 0x80000000;
++	gic_write_irouter(affinity, base + GICD_IROUTER + 44 * 8);
++	/* Decrease irq 44 priority value from default 0x0a to 0x09 */
++	writel_relaxed(0xa0a0a090, base + GICD_IPRIORITYR + rounddown(44, 4));
+ }
+ 
+ static int gic_populate_rdist(void)
+@@ -658,7 +664,8 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+ 	reg = gic_dist_base(d) + GICD_IROUTER + (gic_irq(d) * 8);
+ 	val = gic_mpidr_to_affinity(cpu_logical_map(cpu));
+ 
+-	gic_write_irouter(val, reg);
++	if (gic_irq(d) != 44)
++		gic_write_irouter(val, reg);
+ 
+ 	/*
+ 	 * If the interrupt was enabled, enabled it again. Otherwise,
+
+
+
 ```
 31、delay的时间概念
 ```
@@ -480,6 +511,47 @@ index 58a490e..b14791b 100644
         if (is_c45)
                 return get_phy_c45_ids(bus, addr, phy_id, c45_ids);
                 
+```
+
+39、
+```
+单纯跑iperf , 查看一下CPU 频率
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+多线程-P 4 确认吞吐有到940， 并查询CPU 频率。
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+下面几个调频策略都试一下。
+echo interactive > /sys/devices/platform/dmc/devfreq/dmc/governor
+echo ondemand> /sys/devices/platform/dmc/devfreq/dmc/governor
+echo performance> /sys/devices/platform/dmc/devfreq/dmc/governor
+
+DDR测试
+cat /sys/devices/platform/dmc/devfreq/dmc/available_frequencies
+echo userspace > /sys/devices/platform/dmc/devfreq/dmc/governor
+echo 800000000 > /sys/devices/platform/dmc/devfreq/dmc/min_freq
+cat /sys/devices/platform/dmc/devfreq/dmc/cur_freq
+cat /sys/devices/platform/dmc/devfreq/dmc/load
+
+CPU
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo   1512000 >  /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+调整 协议相关参数， tcp相关参数改大，再把iperf的window size设为2MByte后TX单线程就能跑到平均380M~392Mbps，较之前差不都有50-70M收益
+echo 1048576 > /proc/sys/net/core/wmem_max
+echo 1048576 > /proc/sys/net/core/rmem_max
+echo "4096 1048576 1048576" > /proc/sys/net/ipv4/tcp_rmem
+echo "4096 1048576 1048576" > /proc/sys/net/ipv4/tcp_wmem
+echo 4193104 > /proc/sys/net/ipv4/tcp_limit_output_bytes
+echo 1048576 > /proc/sys/net/ipv4/udp_rmem_min
+echo 1048576 > /proc/sys/net/ipv4/udp_wmem_min
+
+
 ```
 
 
