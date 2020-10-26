@@ -1,0 +1,97 @@
++ gmac_clkin_m0: external-gmac-clockmq {
++     compatible = "fixed-clock";
++     clock-frequency = <5000000>;
++     clock-output-names = "clk_gmac_rgmii_clkin_m1";
++     #clock-cells = <0>;
++ };
+
+
+RMII M0 input
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "input";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+
++		assigned-clocks = <&cru CLK_GMAC_RGMII_M1>,<&cru CLK_GMAC_SRC_M0>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++        assigned-clock-rates = <0>,<0>, <50000000>;
++        assigned-clock-parents = <&gmac_clkin_m0>,<&cru CLK_GMAC_RGMII_M0>, <&cru CLK_GMAC_SRC_M0>, <&cru RMII_MODE_CLK>;
+
+
+		pinctrl‐names = "default";
+		pinctrl‐0 = <&rmiim0_pins &gmac_clk_m0_drv_level0_pins>;
+};
+
+
+
+M0 rmii  output
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "output";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+		assigned‐clocks = <&cru CLK_GMAC_TX_RX>, <&cru CLK_GMAC_SRC>;
+		assigned‐clock‐rates = <0>, <50000000>;
+		assigned‐clock‐parents = <&cru RMII_MODE_CLK>;
+		pinctrl‐names = "default";
+		pinctrl‐0 = <&rmiim0_pins &gmac_clk_m0_drv_level0_pins>;
+};
+
+
+
+====================================================================
+
+RMII M1 input
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "input";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+		
++ assigned­clocks = <&cru CLK_GMAC_RGMII_M1>, <&cru CLK_GMAC_SRC_M1>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++ assigned­clock­rates = <0>, <0>, <50000000>;
++ assigned­clock­parents = <&gmac_clkini_m1>,<&cru CLK_GMAC_RGMII_M1>, <&cru CLK_GMAC_SRC_M1>, <&cru RMII_MODE_CLK>;
+
+		pinctrl‐names = "default";
+		pinctrl-0 = <&rmiim1_pins &gmac_clk_m1_drv_level0_pins>;
+};
+
+
+RMII M1 output
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "output";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+
++         assigned-clocks = <&cru CLK_GMAC_SRC_M1>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++         assigned-clock-rates = <0>, <50000000>;
++         assigned-clock-parents = <&cru CLK_GMAC_RGMII_M1>, <&cru CLK_GMAC_SRC_M1>, <&cru RMII_MODE_CLK>;
+
+		pinctrl‐names = "default";
+		pinctrl-0 = <&rmiim1_pins &gmac_clk_m1_drv_level0_pins>;
+};
+
+&mdio {
+        phy: phy@1 {
+                compatible = "ethernet-phy-ieee802.3-c22";
+                reg = <0x1>;
+        };
+};
+
+
+
+
+
+
+
+
+
