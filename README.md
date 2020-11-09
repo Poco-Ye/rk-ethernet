@@ -553,6 +553,43 @@ echo 1048576 > /proc/sys/net/ipv4/udp_wmem_min
 
 
 ```
+40
+、、、
+android7.1开始的kernel取消了之前版本的/proc/last_kmsg的节点，因此如果想要查看上一次的kernel log，可以在dts里面添加以下节点信息查看
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3368-p9.dts b/arch/arm64/boot/dts/rockchip/rk3368-p9.dts
+index bc0e0e2..7650d5f 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3368-p9.dts
+++ b/arch/arm64/boot/dts/rockchip/rk3368-p9.dts
+@ -70,6 +70,20 @
+};
+};
+ramoops_mem: ramoops_mem {
++ reg = <0x0 0x110000 0x0 0xf0000>;
++ reg-names = "ramoops_mem";
++ };
+
+ramoops {
++ compatible = "ramoops";
++ record-size = <0x0 0x20000>;
++ console-size = <0x0 0x80000>;
++ ftrace-size = <0x0 0x00000>;
++ pmsg-size = <0x0 0x50000>;
++ memory-region = <&ramoops_mem>;
++ };
++
+sdio_pwrseq: sdio-pwrseq {
+compatible = "mmc-pwrseq-simple";
+clocks = <&rk818 1>;
+130|root@rk3399:/sys/fs/pstore # ls
+cd /sys/fs/pstore
+dmesg-ramoops-0 上次内核panic后保存的log。
+pmsg-ramoops-0 上次用户空间的log，android的log
+ftrace-ramoops-0 打印某个时间段内的function trace
+console-ramoops-0 last_log 上次启动的kernel log，但只保存了优先级比默认log level 高的log。
+
+看是否有最后挂掉的日志。
+、、、
 
 
 ----------------------------------------------------------------
