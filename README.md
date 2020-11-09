@@ -554,7 +554,7 @@ echo 1048576 > /proc/sys/net/ipv4/udp_wmem_min
 
 ```
 40
-、、、
+```
 android7.1开始的kernel取消了之前版本的/proc/last_kmsg的节点，因此如果想要查看上一次的kernel log，可以在dts里面添加以下节点信息查看
 
 diff --git a/arch/arm64/boot/dts/rockchip/rk3368-p9.dts b/arch/arm64/boot/dts/rockchip/rk3368-p9.dts
@@ -589,7 +589,7 @@ ftrace-ramoops-0 打印某个时间段内的function trace
 console-ramoops-0 last_log 上次启动的kernel log，但只保存了优先级比默认log level 高的log。
 
 看是否有最后挂掉的日志。
-、、、
+```
 
 
 ----------------------------------------------------------------
