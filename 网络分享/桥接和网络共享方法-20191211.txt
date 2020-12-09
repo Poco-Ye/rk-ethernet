@@ -1,0 +1,64 @@
+1、桥接方法
+
+1）内核关闭以下配置：
+
+ Symbol: BRIDGE_NETFILTER [=n]                                                                                                                                   |
+  | Type  : tristate 
+  | Prompt: Bridged IP/ARP packets filtering                                                                                    |  
+  |   Location:                                                                                                                 |  
+  |     -> Networking support (NET [=y])                                                                                        |  
+  |       -> Networking options                                                                                                 |  
+  |         -> Network packet filtering framework (Netfilter) (NETFILTER [=y])                                                  |  
+  |           -> Advanced netfilter configuration (NETFILTER_ADVANCED [=y])
+
+
+2）打上如下补丁
+
+diff --git a/java/com/android/server/ethernet/EthernetNetworkFactory.java b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+index 15fe2e2..bcc85fa 100755
+--- a/java/com/android/server/ethernet/EthernetNetworkFactory.java
++++ b/java/com/android/server/ethernet/EthernetNetworkFactory.java
+@@ -296,6 +296,8 @@ class EthernetNetworkFactory {
+         @Override
+         public void interfaceAdded(String iface) {
+             Log.d(TAG, "interfaceAdded: " + iface);
++            if ("br0".equals(iface))
++                    mIface = iface;
+             maybeTrackInterface(iface);
+         }
+
+
+3）通过命令启动热点，但不开启nat转发功能方法（用于桥接使用）
+
+ifconfig wlan0 down;
+ndc softap fwreload wlan0 AP;
+ifconfig wlan0 up;
+ndc softap set wlan0 ssid broadcast 153 wpa2-psk password;               //ap名字和密码自行替换
+ndc softap startap
+
+4）将附件（桥接工具）brctl复制到system/bin下面，修改权755
+
+5）开机后执行下面命令：
+
+ifconfig eth0 down
+brctl addbr br0
+brctl addif br0 eth0
+brctl addif br0 wlan0
+ifconfig br0 up
+ifconfig eth0 up                              //eth0和wlan0桥接到br0上，只有br0有IP地址，连接wlan0热点的设备可以从eth0上层服务器获取地址
+
+
+2、网络共享方法(A(eth1)共享B(eth0)方法)
+1）开启接口的dhcp功能方法
+ndc tether stop;
+netcfg eth1 up;
+busybox ifconfig eth1 192.168.0.1 netmask 255.255.255.0;
+ndc tether interface add eth1;
+ndc tether start 192.168.0.2 192.168.0.254;
+
+2）开启nat转发功能方法
+ip rule add from all lookup main pref 9999;
+ndc nat enable eth1 eth0 2 10.80.71.155/24;            //eth1共享eth0网络,地址为eth0的地址
+echo 1 > /proc/sys/net/ipv4/ip_forward;
+#iptables -t nat -I PREROUTING -i eth1  -p udp --dport 53 -j DNAT --to-destination 10.80.71.1; //地址为eth0的dns地址
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -j MASQUERADE    
