@@ -58,3 +58,25 @@ index 4acf1d1..6100b93 100755
 
 
 ```
+
+```
+桥接的方式
+使用桥接的工具(br0 eth0在同一个桥上)
+brctl addbr br0
+brctl addif br0 eth0
+brctl addif br0 wlan0
+先打开热点，
+ifconfig br0 192.168.1.1
+桥的IP与摄像头保持一致
+
+```
+
+
+
+
+
+
+
+
+
+
