@@ -1,0 +1,178 @@
++ gmac_clkin_m0: external-gmac-clockmq {
++     compatible = "fixed-clock";
++     clock-frequency = <5000000>;
++     clock-output-names = "clk_gmac_rgmii_clkin_m0";
++     #clock-cells = <0>;
++ };
+
+
+RMII M0 input
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "input";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+
++	assigned-clocks = <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>, <&cru CLK_GMAC_ETHERNET_OUT>;
++	assigned-clock-parents = <&cru CLK_GMAC_SRC_M0>, <&cru RMII_MODE_CLK>;
++	assigned-clock-rates = <5000000>, <0>, <25000000>;
+
+
+		pinctrl‐names = "default";
+		pinctrl‐0 = <&rmiim0_pins &gmac_clk_m0_drv_level0_pins>;
+};
+
+
+
+
+
+
+M0 rmii  output
+
+ &gmac {
+-       phy-mode = "rgmii";
+-       clock_in_out = "input";
++       phy-mode = "rmii";
++       clock_in_out = "output";
+ 
+-       snps,reset-gpio = <&gpio3 RK_PA0 GPIO_ACTIVE_LOW>;
++       snps,reset-gpio = <&gpio2 RK_PB2 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        /* Reset time is 20ms, 100ms for rtl8211f */
+        snps,reset-delays-us = <0 20000 100000>;
+ 
+-       assigned-clocks = <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>, <&cru CLK_GMAC_ETHERNET_OUT>;
+-       assigned-clock-parents = <&cru CLK_GMAC_SRC_M1>, <&cru RGMII_MODE_CLK>;
+-       assigned-clock-rates = <125000000>, <0>, <25000000>;
++       assigned-clocks = <&cru CLK_GMAC_SRC_M0>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++       assigned-clock-rates = <0>, <50000000>;
++       assigned-clock-parents = <&cru CLK_GMAC_RGMII_M0>, <&cru CLK_GMAC_SRC_M0>, <&cru RMII_MODE_CLK>;
+ 
+        pinctrl-names = "default";
+-       pinctrl-0 = <&rgmiim1_pins &clk_out_ethernetm1_pins>;
++       pinctrl-0 = <&rmiim0_pins &gmac_clk_m0_drv_level0_pins>;
+ 
+        tx_delay = <0x2a>;
+        rx_delay = <0x1a>;
+
+
+
+
+
+
+====================================================================
+
+RMII M1 input
+hcq@server-101:~/RV1126_RV1109_LINUX_V1.2.0_20200807/kernel$ git diff .
+diff --git a/arch/arm/boot/dts/rv1126-evb-v10.dtsi b/arch/arm/boot/dts/rv1126-evb-v10.dtsi
+old mode 100644
+new mode 100755
+index 144e9ed..c5b2ae4
+--- a/arch/arm/boot/dts/rv1126-evb-v10.dtsi
++++ b/arch/arm/boot/dts/rv1126-evb-v10.dtsi
+@@ -104,6 +104,12 @@
+                };
+        };
+ 
++       gmac_clkini_m1: external-gmac-clockm1 {
++                       compatible = "fixed-clock";
++                       clock-frequency = <5000000>;
++                       clock-output-names = "clk_gmac_rgmii_clkin_m1";
++                       #clock-cells = <0>;
++       };
+
+ &gmac {
+-       phy-mode = "rgmii";
++       phy-mode = "rmii";
+        clock_in_out = "input";
+ 
+-       snps,reset-gpio = <&gpio3 RK_PA0 GPIO_ACTIVE_LOW>;
++       snps,reset-gpio = <&gpio2 RK_PB2 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        /* Reset time is 20ms, 100ms for rtl8211f */
+        snps,reset-delays-us = <0 20000 100000>;
+ 
+-       assigned-clocks = <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>, <&cru CLK_GMAC_ETHERNET_OUT>;
+-       assigned-clock-parents = <&cru CLK_GMAC_SRC_M1>, <&cru RGMII_MODE_CLK>;
+-       assigned-clock-rates = <125000000>, <0>, <25000000>;
++	assigned-clocks = <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>, <&cru CLK_GMAC_ETHERNET_OUT>;
++	assigned-clock-parents = <&cru CLK_GMAC_SRC_M1>, <&cru RMII_MODE_CLK>;
++	assigned-clock-rates = <5000000>, <0>, <25000000>;
+ 
+        pinctrl-names = "default";
+-       pinctrl-0 = <&rgmiim1_pins &clk_out_ethernetm1_pins>;
++       pinctrl-0 = <&rmiim1_pins &gmac_clk_m1_drv_level0_pins>;
+ 
+        tx_delay = <0x2a>;
+        rx_delay = <0x1a>;
+
+
+
+
+
+		
+		
+RMII M1 output
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "output";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+
++         assigned-clocks = <&cru CLK_GMAC_SRC_M1>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++         assigned-clock-rates = <0>, <50000000>;
++         assigned-clock-parents = <&cru CLK_GMAC_RGMII_M1>, <&cru CLK_GMAC_SRC_M1>, <&cru RMII_MODE_CLK>;
+
+		pinctrl‐names = "default";
++		pinctrl-0 = <&rmiim1_pins &gmac_clk_m1_drv_level0_pins>;
+};
+
+&mdio {
+        phy: phy@1 {
+                compatible = "ethernet-phy-ieee802.3-c22";
+                reg = <0x1>;
+        };
+};
+
+
+[root@RV1126_RV1109:/]# cat  /sys/kernel/debug/clk/clk_summary
+cat  /sys/kernel/debug/clk/clk_summary
+                                 enable  prepare  protect                                duty
+   clock                          count    count    count        rate   accuracy phase  cycle
+---------------------------------------------------------------------------------------------
+ rk808-clkout2                        1        1        0       32768          0     0  50000
+ rk808-clkout1                        0        0        0       32768          0     0  50000
+ clk_gmac_rgmii_clkin_m1              1        1        0     5000000          0     0  50000
+    clk_gmac_rgmii_m1                 1        1        0     5000000          0     0  50000
+       clk_gmac_src_m1                1        1        0     5000000          0     0  50000
+          clk_gmac_src                3        3        0     5000000          0     0  50000
+             clk_gmac_rx_src          1        1        0     5000000          0     0  50000
+                clk_gmac_rx_div20       0        0        0      250000          0     0  50000
+                clk_gmac_rx_div2       1        1        0     2500000          0     0  50000
+                   rmii_mode_clk       1        1        0     2500000          0     0  50000
+                      clk_gmac_tx_rx       3        3        0     2500000          0     0  50000
+             clk_gmac_tx_src          0        0        0     5000000          0     0  50000
+                rgmii_mode_clk        0        0        0     5000000          0     0  50000
+                clk_gmac_tx_div50       0        0        0      100000          0     0  50000
+                clk_gmac_tx_div5       0        0        0     1000000          0     0  50000
+             clk_gmac_ref             1        1        0     5000000          0     0  50000
+ clk_gmac_rgmii_clkin_m0              0        0        0   125000000          0     0  50000
+    clk_gmac_rgmii_m0                 0        0        0   125000000          0     0  50000
+ dummy_cpll                           0        0        0           0          0     0  50000
+
+提供25M 作为Xtal  in 
+pll_cpll                          1        1        0   500000000          0     0  50000
+   cpll                           7        8        0   500000000          0     0  50000
+      clk_gmac_ethernet_out2io       1        1        0    25000000          0     0  50000
+
+
+
+
+
+
+
+
