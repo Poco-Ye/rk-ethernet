@@ -340,6 +340,26 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
 
 
 
+3288 设置为输出
+
+&gmac {
+	phy-supply = <&vcc_phy>;
+	phy-mode = "rgmii";
+	clock_in_out = "output";
+	snps,reset-gpio = <&gpio4 8 GPIO_ACTIVE_HIGH>;
+	snps,reset-active-low;
+	snps,reset-delays-us = <0 10000 50000>;
+	assigned-clocks = <&cru SCLK_MAC>;
+	assigned-clock-rates = <125000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&rgmii_pins>, <&bcm_rst>;
+	tx_delay = <0x30>;
+	rx_delay = <0x10>;
+	max-speed = <100>;
+	status = "okay";
+};
+
+
 ```
 
 
