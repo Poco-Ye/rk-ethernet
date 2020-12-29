@@ -338,6 +338,26 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
         status = "okay";
 };
 
+百兆输出M1（已经量产的配置）
+&gmac {
+		phy‐mode = "rmii";
+		clock_in_out = "output";
+		snps,reset‐gpio = <&gpio3 RK_PC5 GPIO_ACTIVE_LOW>;
+		snps,reset‐active‐low;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		snps,reset‐delays‐us = <0 50000 100000>;
+
++         assigned-clocks = <&cru CLK_GMAC_SRC_M1>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++         assigned-clock-rates = <0>, <50000000>;
++         assigned-clock-parents = <&cru CLK_GMAC_RGMII_M1>, <&cru CLK_GMAC_SRC_M1>, <&cru RMII_MODE_CLK>;
+
+		pinctrl‐names = "default";
+		pinctrl-0 = <&rmiim1_pins &gmac_clk_m1_pins>;
+		
+	 phy-handle = <&phy>;
+	 status = "okay";
+};
+
 
 
 3288 设置为输出
