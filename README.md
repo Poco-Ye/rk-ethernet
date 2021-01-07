@@ -591,6 +591,14 @@ console-ramoops-0 last_log 上次启动的kernel log，但只保存了优先级�
 看是否有最后挂掉的日志。
 ```
 
+41、io指令没有怎么办
+```
+加CONFIG_DEVMEM=y
+CONFIG_DEVTMPFS_MOUNT=y
+
+然后编译
+```
+
 
 ----------------------------------------------------------------
 
