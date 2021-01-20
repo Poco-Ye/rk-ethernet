@@ -1,3 +1,9 @@
+```
+使用的dts目录打包发过来，指明使用哪个dts
+find / -name pinmux-pins  cat pinmux-pins  显示的信息发过来
+cat /sys/kernel/debug/d/clk/clk_summary  显示的信息发过来
+```
+
 
 开两个终端，一个查看Kconfig，一个在menuconfig上搜索（所有的Kconfig子块可以搜索到），可以很快确定目前的模块驱动
 
