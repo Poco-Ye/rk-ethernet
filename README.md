@@ -1,5 +1,5 @@
 ```
-tar cvf dts.atr dts，使用的dts目录打包发过来，指明使用哪个dts
+tar cvf dts.tar dts，使用的dts目录打包发过来，指明使用哪个dts
 find / -name pinmux-pins  cat pinmux-pins  显示的信息一起打包发过来
 cat /sys/kernel/debug/d/clk/clk_summary  显示的信息一起打包发过来
 ```
