@@ -1,0 +1,61 @@
+diff --git a/java/com/android/server/ethernet/EthernetTracker.java b/java/com/android/server/ethernet/EthernetTracker.java
+index 308e328..dbc7a1f 100644
+--- a/java/com/android/server/ethernet/EthernetTracker.java
++++ b/java/com/android/server/ethernet/EthernetTracker.java
+@@ -252,12 +252,15 @@ final class EthernetTracker {
+         }
+     }
+ 
+-    private void maybeTrackInterface(String iface) {
++    //xlr change for reboot and ethernet can't connect 20.12.17
++    //private void maybeTrackInterface(String iface) {
++    private boolean maybeTrackInterface(String iface) {
+         if (DBG) Log.i(TAG, "maybeTrackInterface " + iface);
+         // If we don't already track this interface, and if this interface matches
+         // our regex, start tracking it.
+         if (!iface.matches(mIfaceMatch) || mFactory.hasInterface(iface)) {
+-            return;
++            //return;
++            return false;
+         }
+ 
+         if (mIpConfigForDefaultInterface != null) {
+@@ -266,13 +269,37 @@ final class EthernetTracker {
+         }
+ 
+         addInterface(iface);
++        //xlr add 20.12.17
++        return true;
+     }
+ 
+     private void trackAvailableInterfaces() {
+         try {
+             final String[] ifaces = mNMService.listInterfaces();
+             for (String iface : ifaces) {
+-                maybeTrackInterface(iface);
++                //xlr change for reboot and ethernet can't connect 20.12.17
++                //maybeTrackInterface(iface);
++				if (maybeTrackInterface(iface)) {
++                    String mIfaceTmp = iface;
++                    new Thread(new Runnable() {
++                        public void run() {
++                            // carrier is always 1 when kernel boot up no matter RJ45 plugin or not,
++                            // sleep a little time to wait kernel's correct carrier status
++                            try {
++                                Thread.sleep(3000);
++                            } catch (InterruptedException ignore) {
++                            }
++
++                            IpConfiguration config = getIpConfiguration(mIfaceTmp);
++                            if(config != null && IpAssignment.STATIC == config.getIpAssignment())
++                            {
++                                updateInterfaceState(mIfaceTmp, false);
++                                updateInterfaceState(mIfaceTmp, true);
++                            }
++                        }
++                    }).start();
++                    break;
++                }
+             }
+         } catch (RemoteException | IllegalStateException e) {
+             Log.e(TAG, "Could not get list of interfaces " + e);
