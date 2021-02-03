@@ -52,8 +52,15 @@ index 4acf1d1..6100b93 100755
 +       }
 
 
-+       SystemProperties.set("ctl.start", "start_softap_wlan0_to_eth2.sh");  
++       SystemProperties.set("ctl.start", service_start_softap_wlan0_to_eth2);  
         //在init.connectivity.rc 中加服务，效果类似于setprop ctl.start service,会触发运行，selinux权限可能要设置
+	
+init.connectivity.rc	
+service service_start_softap_wlan0_to_eth2 /system/bin/start_softap_wlan0_to_eth2.sh
+    class main
+    disabled
+    oneshot
+
 
 
 
