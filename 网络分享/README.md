@@ -71,7 +71,17 @@ ifconfig br0 192.168.1.1
 
 ```
 
-
+```
+客户实际使用已成功 4G网分享到eth0
+ip rule add from all lookup main pref 9999
+ifconfig eth0 down
+ifconfig eth0 up
+busybox ifconfig eth0 192.168.44.1
+ndc netd 5003 tether start 192.168.44.2 192.168.44.254
+ndc netd 7 nat enable eth0 ppp0 1 192.168.44.1/24
+echo 1 >/proc/sys/net/ipv4/ip_forward
+iptables -t nat -I PREROUTING -i eth0 -p udp --dport 53 -j DNAT --to-destination 120.196.165.7
+```
 
 
 
