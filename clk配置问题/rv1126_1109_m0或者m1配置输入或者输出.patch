@@ -1,7 +1,7 @@
 + gmac_clkin_m0: external-gmac-clockmq {
 +     compatible = "fixed-clock";
-+     clock-frequency = <5000000>;
-+     clock-output-names = "clk_gmac_rgmii_clkin_m1";
++     clock-frequency = <50000000>;
++     clock-output-names = "clk_gmac_rgmii_clkin_m0";
 +     #clock-cells = <0>;
 + };
 
@@ -15,7 +15,7 @@ RMII M0 input
 		/* Reset time is 20ms, 100ms for rtl8211f */
 		snps,reset‐delays‐us = <0 50000 100000>;
 
-+		assigned-clocks = <&cru CLK_GMAC_RGMII_M1>,<&cru CLK_GMAC_SRC_M0>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
++		assigned-clocks = <&cru CLK_GMAC_RGMII_M0>,<&cru CLK_GMAC_SRC_M0>, <&cru CLK_GMAC_SRC>, <&cru CLK_GMAC_TX_RX>;
 +        assigned-clock-rates = <0>,<0>, <50000000>;
 +        assigned-clock-parents = <&gmac_clkin_m0>,<&cru CLK_GMAC_RGMII_M0>, <&cru CLK_GMAC_SRC_M0>, <&cru RMII_MODE_CLK>;
 
