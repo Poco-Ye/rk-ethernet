@@ -1,0 +1,130 @@
+1. 添加
+frameworks/native$ git diff
+diff --git a/data/etc/tablet_core_hardware.xml b/data/etc/tablet_core_hardware.xml
+index e8ad508..241643c 100644
+--- a/data/etc/tablet_core_hardware.xml
++++ b/data/etc/tablet_core_hardware.xml
+@@ -76,6 +76,7 @@
+     <feature name="android.hardware.bluetooth_le" />
+
+     <feature name="android.hardware.ethernet" />
++    <feature name="android.software.pppoe" />
+
+     <!-- devices with GPS must include android.hardware.location.gps.xml -->
+     <!-- devices with a rear-facing camera must include one of these as appropriate:@
+
+2. 编译pppoe代码 
+
+device/rockchip/common$ git diff .
+diff --git a/device.mk b/device.mk
+index de53d3f..5f69e6f 100755
+--- a/device.mk
++++ b/device.mk
+@@ -119,7 +119,7 @@ PRODUCT_PACKAGES += \
+     wpa_supplicant.conf \
+     dhcpcd.conf
+
+-ifeq ($(strip $(TARGET_BOARD_PLATFORM_PRODUCT)), box)
++#ifeq ($(strip $(TARGET_BOARD_PLATFORM_PRODUCT)), box)
+ PRODUCT_PACKAGES += \
+     libpppoe-jni \
+     pppoe-service \
+@@ -127,7 +127,7 @@ PRODUCT_PACKAGES += \
+
+ PRODUCT_SYSTEM_SERVER_JARS += \
+     pppoe-service
+-endif
++#endif
+
+ ifeq ($(strip $(TARGET_BOARD_PLATFORM_PRODUCT)), box)
+ PRODUCT_COPY_FILES += \
+
+3. 编译
+make clean && make
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==============================================================================================
+
+android 7.0 user模式下pppoe问题
+1、缺少工具busybox
+fzk@srv165:~/3328-7.0/vendor/rockchip/common$ git diff
+diff --git a/bin/Android.mk b/bin/Android.mk
+index e58759f..d92a23a 100644
+--- a/bin/Android.mk
++++ b/bin/Android.mk
+@@ -6,7 +6,7 @@ LOCAL_PATH := $(call my-dir)
+ #ifeq ($(strip $(TARGET_ARCH)), arm)
+ 
+-ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
++ifneq (,$(filter user userdebug eng,$(TARGET_BUILD_VARIANT)))
+ # busybox
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := busybox
+diff --git a/bin/bin.mk b/bin/bin.mk
+index 13df1ad..42cea95 100644
+--- a/bin/bin.mk
++++ b/bin/bin.mk
+@@ -12,7 +12,7 @@ PRODUCT_PACKAGES += \
+ 
+ endif
+ 
+-ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
++ifneq (,$(filter user userdebug eng,$(TARGET_BUILD_VARIANT)))
+ PRODUCT_PACKAGES += \
+        busybox
+ endif
+fzk@srv165:~/3328-7.0/vendor/rockchip/common$ 
+
+
+
+2、sepolicy添加如下权限
+diff --git a/sepolicy/system_server.te b/sepolicy/system_server.te
+index 0247bb5..f842706 100755
+--- a/sepolicy/system_server.te
++++ b/sepolicy/system_server.te
+@@ -20,6 +20,7 @@ allow system_server system_server:unix_stream_socket { ioctl };
+ 
+ allow system_server pppoe_service:service_manager { add find };
+ allow system_server pppoe_data_file:file { read open getattr };
++allow system_server pppoe_data_file:dir { search };
+
+
+===========================================================================================
+
+Android5.1 user版本pppoe无法无法启动问题
+/rk3288_rel_5.1/external/sepolicy$ git diff
+diff --git a/service_contexts b/service_contexts
+index 767d7db..626a84c 100644
+--- a/service_contexts
++++ b/service_contexts
+@@ -82,6 +82,7 @@ phone1                                    u:object_r:radio_service:s0
+ phone2                                    u:object_r:radio_service:s0
+ phone                                     u:object_r:radio_service:s0
+ power                                     u:object_r:system_server_service:s0
++pppoe                                     u:object_r:system_server_service:s0
+ print                                     u:object_r:system_server_service:s0
+ procstats                                 u:object_r:system_server_service:s0
+ radio.phonesubinfo                        u:object_r:radio_service:s0
+
+
+
+
+
+
+
