@@ -1,0 +1,103 @@
+这是开发板双以太网验证OK boot.img
+链接：https://pan.baidu.com/s/1czFimGYft9CST00b_K7qFQ 
+提取码：nczi 
+
+
+hxg@ubuntu101:~/work/android/Rockckchip_Android11.0_SDK/ROCKCHIP_ANDROID11.0_SDK_RELEASE/kernel/arch/arm64/boot/dts/rockchip$ git diff rk3568-evb1-ddr4-v10.dtsi
+diff --git a/arch/arm64/boot/dts/rockchip/rk3568-evb1-ddr4-v10.dtsi b/arch/arm64/boot/dts/rockchip/rk3568-evb1-ddr4-v10.dtsi
+index 05d0afd..795fe43 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3568-evb1-ddr4-v10.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3568-evb1-ddr4-v10.dtsi
+@@ -210,7 +223,7 @@
+ &gmac0 {
+        phy-mode = "rgmii";
+-       clock_in_out = "output";
++       clock_in_out = "input";
+ 
+        snps,reset-gpio = <&gpio2 RK_PD3 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+@@ -218,7 +231,7 @@
+        snps,reset-delays-us = <0 20000 100000>;
+ 
+        assigned-clocks = <&cru SCLK_GMAC0_RX_TX>, <&cru SCLK_GMAC0>;
+-       assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>;
++       assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>, <&gmac0_clkin>;
+        assigned-clock-rates = <0>, <125000000>;
+ 
+        pinctrl-names = "default";
+@@ -226,7 +239,8 @@
+                     &gmac0_tx_bus2
+                     &gmac0_rx_bus2
+                     &gmac0_rgmii_clk
+-                    &gmac0_rgmii_bus>;
++                    &gmac0_rgmii_bus
++                    &gmac0_clkinout>;
+ 
+        tx_delay = <0x3c>;
+        rx_delay = <0x2f>;
+@@ -237,7 +251,7 @@
+ 
+ &gmac1 {
+        phy-mode = "rgmii";
+-       clock_in_out = "output";
++       clock_in_out = "input";
+ 
+        snps,reset-gpio = <&gpio2 RK_PD1 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+@@ -245,7 +259,7 @@
+        snps,reset-delays-us = <0 20000 100000>;
+ 
+        assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>;
+-       assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>;
++       assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>, <&gmac1_clkin>;
+        assigned-clock-rates = <0>, <125000000>;
+ 
+        pinctrl-names = "default";
+@@ -253,7 +267,8 @@
+                     &gmac1m1_tx_bus2
+                     &gmac1m1_rx_bus2
+                     &gmac1m1_rgmii_clk
+-                    &gmac1m1_rgmii_bus>;
++                    &gmac1m1_rgmii_bus
++                    &gmac1m1_clkinout>;
+ 
+        tx_delay = <0x4f>;
+        rx_delay = <0x26>;
+
+
+
+
+用下面命令编译：
+build.sh
+升级kernel 下boot.img
+
+
+		
+		
+问题排查：
+cat /sys/kernel/debug/pinctrl/pinctrl-rockchip-pinctrl/pinmux-pins
+
+ 
+
+dts 配制为input, 由phy 提供125MHZ mac_clk, clock tree 如下：
+cat  /sys/kernel/debug/clk/clk_summary
+ gmac1_clkin                          1        1        0   125000000          0     0  50000
+    clk_gmac1                         2        2        0   125000000          0     0  50000
+       clk_gmac1_rgmii_speed          1        1        0   125000000          0     0  50000
+          clk_gmac1_rx_tx             2        2        0   125000000          0     0  50000
+       clk_gmac1_rx_div20             0        0        0     6250000          0     0  50000
+          clk_gmac1_rmii_speed        0        0        0     6250000          0     0  50000
+       clk_gmac1_rx_div2              0        0        0    62500000          0     0  50000
+       clk_gmac1_tx_div50             0        0        0     2500000          0     0  50000
+       clk_gmac1_tx_div5              0        0        0    25000000          0     0  50000
+ gmac0_clkin                          1        1        0   125000000          0     0  50000
+    clk_gmac0                         2        2        0   125000000          0     0  50000
+       clk_gmac0_rgmii_speed          1        1        0   125000000          0     0  50000
+          clk_gmac0_rx_tx             2        2        0   125000000          0     0  50000
+       clk_gmac0_rx_div20             0        0        0     6250000          0     0  50000
+          clk_gmac0_rmii_speed        0        0        0     6250000          0     0  50000
+       clk_gmac0_rx_div2              0        0        0    62500000          0     0  50000
+       clk_gmac0_tx_div50             0        0        0     2500000          0     0  50000
+       clk_gmac0_tx_div5              0        0        0    25000000          0     0  50000
+ iclk_vicap_g    
+ 0        0        0           0          0     0  50000
