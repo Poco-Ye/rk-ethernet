@@ -516,7 +516,18 @@ index 58a490e..b14791b 100644
 +
         if (is_c45)
                 return get_phy_c45_ids(bus, addr, phy_id, c45_ids);
-                
+   
+
+ &mdio1 {
+        rgmii_phy1: phy@0 {
+-               compatible = "ethernet-phy-ieee802.3-c22";
++//             compatible = "ethernet-phy-ieee802.3-c22";
++               compatible = "ethernet-phy-id1234.d400", "ethernet-phy-ieee802.3-c22";
+                reg = <0x0>;
+        };
+ };
+
+或者在属性上面设置             
 ```
 
 39、
