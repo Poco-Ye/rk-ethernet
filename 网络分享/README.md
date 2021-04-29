@@ -89,6 +89,18 @@ ndc netd 7 nat enable eth0 ppp0 1 192.168.44.1/24
 echo 1 >/proc/sys/net/ipv4/ip_forward
 iptables -t nat -I PREROUTING -i eth0 -p udp --dport 53 -j DNAT --to-destination 120.196.165.7
 ```
+```
+android11 网络分享
+busybox ifconfig eth0 192.168.43.1 netmask 255.255.255.0;
+ndc tether interface add eth0;
+ndc tether start 192.168.43.1 192.168.43.254
+ndc nat enable eth0 wlan0 1 192.168.43.1/24
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -I PREROUTING -i eth0 -p udp --dport 53 -j DNAT --to-destination 8.8.8.8
+ip rule add from all iif eth0 oif wlan0 lookup wlan0 pref 22000
+ip rule add from all lookup wlan0 pref 22000
+ip rule add from all lookup main pref 9999
+```
 
 
 
