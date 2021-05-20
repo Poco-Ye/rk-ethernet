@@ -394,6 +394,14 @@ index abde6c5..791c32c 100644
  
 nice -n -20 iperf -c 192.168.30.100 -i 1 -t 5 -w 1M -d -P8
 
+应该是这应用问题，我以前在屏蔽房用ixhhariot 跑是正常的， 电脑是XP系统， ixcharoit 是6.7版本， 板子上endpoint.apk version 7.30 SP1 build 32.
+
+不记得是不是这个endpoint
+
+使用：
+3399以太网用ixCharoit 跑双流.zip
+endpoint.apk
+
 可以直接测好丢过去，硬要他们自己解自己系统资源问题，就怪他们
 
 切换CPU core 中断验证。
