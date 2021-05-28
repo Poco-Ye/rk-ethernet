@@ -380,6 +380,64 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
 };
 
 
+公板3568成功配置
+
+--- a/arch/arm64/boot/dts/rockchip/rk3568-evb1-ddr4-v10.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3568-evb1-ddr4-v10.dtsi
+@@ -206,7 +206,7 @@
+
+ &gmac0 {
+        phy-mode = "rgmii";
+-       clock_in_out = "output";
++       clock_in_out = "input";
+
+        snps,reset-gpio = <&gpio2 RK_PD3 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+@@ -214,7 +214,7 @@
+        snps,reset-delays-us = <0 20000 100000>;
+
+        assigned-clocks = <&cru SCLK_GMAC0_RX_TX>, <&cru SCLK_GMAC0>;
+-       assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>;
++       assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>, <&gmac0_clkin>;
+        assigned-clock-rates = <0>, <125000000>;
+
+        pinctrl-names = "default";
+@@ -222,6 +222,7 @@
+                     &gmac0_tx_bus2
+                     &gmac0_rx_bus2
+                     &gmac0_rgmii_clk
++                    &gmac0_clkinout
+                     &gmac0_rgmii_bus>;
+
+        tx_delay = <0x3c>;
+@@ -233,7 +234,7 @@
+
+ &gmac1 {
+        phy-mode = "rgmii";
+-       clock_in_out = "output";
++       clock_in_out = "input";
+
+        snps,reset-gpio = <&gpio2 RK_PD1 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+@@ -241,7 +242,7 @@
+        snps,reset-delays-us = <0 20000 100000>;
+
+        assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>;
+-       assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>;
++       assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>, <&gmac1_clkin>;
+        assigned-clock-rates = <0>, <125000000>;
+
+        pinctrl-names = "default";
+@@ -249,6 +250,7 @@
+                     &gmac1m1_tx_bus2
+                     &gmac1m1_rx_bus2
+                     &gmac1m1_rgmii_clk
++                    &gmac1m1_clkinout
+                     &gmac1m1_rgmii_bus>;
+
+        tx_delay = <0x4f>;
+
+
 ```
 
 
