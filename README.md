@@ -638,6 +638,39 @@ CONFIG_DEVTMPFS_MOUNT=y
 ```
 将CONFIG_IP175D_PHY 关闭
 ```
+44、udp吞吐丢包
+```
+hcq@ubuntu101:~/RK3399/RK3399_LINUX_SDK_Release/kernel/drivers/net/ethernet/stmicro/stmmac$ git diff .
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index b3b8d87..df62d72 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -73,7 +73,7 @@ MODULE_PARM_DESC(phyaddr, "Physical device address");
+ 
+ #define STMMAC_TX_THRESH       (DMA_TX_SIZE / 4)
+ 
+-static int flow_ctrl = FLOW_OFF;
++static int flow_ctrl = FLOW_AUTO;
+ module_param(flow_ctrl, int, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(flow_ctrl, "Flow control ability [on/off]");
+ 
+@@ -723,7 +723,7 @@ static void stmmac_adjust_link(struct net_device *dev)
+                        priv->oldduplex = phydev->duplex;
+                }
+                /* Flow Control operation */
+-               if (phydev->pause)
++               //if (phydev->pause)
+                        priv->hw->mac->flow_ctrl(priv->hw, phydev->duplex,
+                                                 fc, pause_time);
+ 
+@@ -827,6 +827,7 @@ static int stmmac_init_phy(struct net_device *dev)
+        priv->oldlink = 0;
+        priv->speed = 0;
+        priv->oldduplex = -1;
++       priv->flow_ctrl = FLOW_AUTO
+ 
+        if (priv->plat->phy_node) {
+```
 
 ----------------------------------------------------------------
 
