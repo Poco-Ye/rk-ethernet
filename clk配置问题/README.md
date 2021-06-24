@@ -438,6 +438,36 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
         tx_delay = <0x4f>;
 
 
+
+客户3568输出成功的配置
+&gmac0 {
+        phy-mode = "rgmii";
+        clock_in_out = "output";
+
+        snps,reset-gpio = <&gpio2 RK_PD3 GPIO_ACTIVE_LOW>;
+        snps,reset-active-low;
+        /* Reset time is 20ms, 100ms for rtl8211f */
+        snps,reset-delays-us = <0 20000 100000>;
+
+        assigned-clocks = <&cru SCLK_GMAC0_RX_TX>, <&cru SCLK_GMAC0>;
+        assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>;
+        assigned-clock-rates = <0>, <125000000>;
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&gmac0_miim
+                     &gmac0_tx_bus2
+                     &gmac0_rx_bus2
+                     &gmac0_rgmii_clk
+                     &gmac0_rgmii_bus>;
+
+        tx_delay = <0x3c>;
+        rx_delay = <0x2f>;
+
+        phy-handle = <&rgmii_phy0>;
+        status = "okay";
+};
+
+
 ```
 
 
