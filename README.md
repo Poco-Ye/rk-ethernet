@@ -672,6 +672,22 @@ index b3b8d87..df62d72 100644
         if (priv->plat->phy_node) {
 ```
 
+45、休眠给电
+```
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi
+index be7c60b..d15b088 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-evb-rev3.dtsi
+@@ -315,7 +315,7 @@
+ 				regulator-boot-on;
+ 				regulator-name = "vcc3v3_s0";
+ 				regulator-state-mem {
+-					regulator-off-in-suspend;
++					regulator-on-in-suspend;
+ 				};
+ 			};
+ 		};
+```
 ----------------------------------------------------------------
 
 
