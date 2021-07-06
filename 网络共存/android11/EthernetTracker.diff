@@ -1,0 +1,67 @@
+diff --git a/java/com/android/server/ethernet/EthernetTracker.java b/java/com/android/server/ethernet/EthernetTracker.java
+index 4ab1dff..d06bcb8 100644
+--- a/java/com/android/server/ethernet/EthernetTracker.java
++++ b/java/com/android/server/ethernet/EthernetTracker.java
+@@ -77,6 +81,11 @@ final class EthernetTracker {
+     private final Handler mHandler;
+     private final EthernetNetworkFactory mFactory;
+     private final EthernetConfigStore mConfigStore;
++    private static String mIface = "eth0";
++    private Context mContext;
++    private EthernetNetworkFactoryExt mEthernetNetworkFactoryExt;
+ 
+     private final RemoteCallbackList<IEthernetServiceListener> mListeners =
+             new RemoteCallbackList<>();
+@@ -85,6 +94,7 @@ final class EthernetTracker {
+ 
+     EthernetTracker(Context context, Handler handler) {
+         mHandler = handler;
++        mContext = context;
+ 
+         // The services we use.
+         IBinder b = ServiceManager.getService(Context.NETWORKMANAGEMENT_SERVICE);
+@@ -106,6 +116,7 @@ final class EthernetTracker {
+         NetworkCapabilities nc = createNetworkCapabilities(true /* clear default capabilities */);
+         mFactory = new EthernetNetworkFactory(handler, context, nc);
+         mFactory.register();
++        mEthernetNetworkFactoryExt = new EthernetNetworkFactoryExt();
+     }
+ 
+     void start() {
+@@ -215,6 +226,8 @@ final class EthernetTracker {
+     }
+ 
+     private void updateInterfaceState(String iface, boolean up) {
++        if (!mIface.equals(iface))
++            return ;
+         boolean modified = mFactory.updateInterfaceLinkState(iface, up);
+         if (modified) {
+             boolean restricted = isRestrictedInterface(iface);
+@@ -250,6 +263,7 @@ final class EthernetTracker {
+         }
+ 
+         addInterface(iface);
++        mEthernetNetworkFactoryExt.start(mContext, mNMService);
+     }
+ 
+     private void trackAvailableInterfaces() {
+@@ -271,17 +285,51 @@ final class EthernetTracker {
+             if (DBG) {
+                 Log.i(TAG, "interfaceLinkStateChanged, iface: " + iface + ", up: " + up);
+             }
+             mHandler.post(() -> updateInterfaceState(iface, up));
++            mHandler.post(() -> mEthernetNetworkFactoryExt.interfaceLinkStateChanged(iface, up);
+         }
+ 
+         @Override
+         public void interfaceAdded(String iface) {
+             mHandler.post(() -> maybeTrackInterface(iface));
++            mHandler.post(() -> mEthernetNetworkFactoryExt.interfaceAdded(iface));
+         }
+ 
+         @Override
+         public void interfaceRemoved(String iface) {
+             mHandler.post(() -> removeInterface(iface));
++            mHandler.post(() -> mEthernetNetworkFactoryExt.interfaceRemoved(iface));
+         }
+     }
