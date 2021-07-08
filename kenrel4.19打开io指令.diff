@@ -1,0 +1,100 @@
+diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+index 0b94b67..e363df4 100644
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -228,7 +228,7 @@ int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
+ 	return (pfn + (size >> PAGE_SHIFT)) <= (1 + (PHYS_MASK >> PAGE_SHIFT));
+ }
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ 
+ #include <linux/ioport.h>
+ 
+diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+index 157f2ca..167cb65 100644
+--- a/arch/arm64/mm/mmap.c
++++ b/arch/arm64/mm/mmap.c
+@@ -135,7 +135,7 @@ int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
+ 	return !(((pfn << PAGE_SHIFT) + size) & ~PHYS_MASK);
+ }
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ 
+ #include <linux/ioport.h>
+ 
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 84a012e..6435534 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -573,7 +573,7 @@ static int __init add_system_ram_resources(void)
+ }
+ subsys_initcall(add_system_ram_resources);
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ /*
+  * devmem_is_allowed(): check to see if /dev/mem access to a certain address
+  * is valid. The argument is a physical page number.
+diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
+index cb1d8fd..d1b25ae 100644
+--- a/arch/unicore32/include/asm/io.h
++++ b/arch/unicore32/include/asm/io.h
+@@ -48,7 +48,7 @@ extern void __uc32_iounmap(volatile void __iomem *addr);
+ #define PIO_MASK		(unsigned int)(IO_SPACE_LIMIT)
+ #define PIO_RESERVED		(PIO_OFFSET + PIO_MASK + 1)
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ 
+ #include <linux/ioport.h>
+ #include <linux/mm.h>
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index a3c9ea2..1befa1f 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -794,7 +794,7 @@ pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+ 	return vma_prot;
+ }
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ /* This check is done in drivers/char/mem.c in case of STRICT_DEVMEM */
+ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
+ {
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 54b8649..2d9ac3c 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -60,7 +60,7 @@ static inline int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
+ }
+ #endif
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ static inline int page_is_allowed(unsigned long pfn)
+ {
+ 	return devmem_is_allowed(pfn);
+@@ -881,7 +881,7 @@ static const struct memdev {
+ 	const struct file_operations *fops;
+ 	fmode_t fmode;
+ } devlist[] = {
+-#ifdef CONFIG_DEVMEM
++#if 1
+ 	 [1] = { "mem", 0, &mem_fops, FMODE_UNSIGNED_OFFSET },
+ #endif
+ #ifdef CONFIG_DEVKMEM
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 8205d8e..c317417 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -1525,7 +1525,7 @@ int iomem_map_sanity_check(resource_size_t addr, unsigned long size)
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_STRICT_DEVMEM
++#if 0
+ static int strict_iomem_checks = 1;
+ #else
+ static int strict_iomem_checks;
