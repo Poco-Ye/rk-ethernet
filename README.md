@@ -638,7 +638,7 @@ CONFIG_DEVTMPFS_MOUNT=y
 ```
 将CONFIG_IP175D_PHY 关闭
 ```
-44、udp吞吐丢包
+44、udp或tcp吞吐丢包
 ```
 hcq@ubuntu101:~/RK3399/RK3399_LINUX_SDK_Release/kernel/drivers/net/ethernet/stmicro/stmmac$ git diff .
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
@@ -670,6 +670,20 @@ index b3b8d87..df62d72 100644
 +       priv->flow_ctrl = FLOW_AUTO
  
         if (priv->plat->phy_node) {
+        
+        
+        
+--- a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
++++ b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
+@@ -3151,7 +3151,7 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+
+        ndev->netdev_ops = &stmmac_netdev_ops;
+
+-       ndev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
++       ndev->hw_features = NETIF_F_SG | NETIF_F_IPV6_CSUM |
+                            NETIF_F_RXCSUM;
+        ndev->features |= ndev->hw_features | NETIF_F_HIGHDMA;
+        ndev->watchdog_timeo = msecs_to_jiffies(watchdog);
 ```
 
 45、休眠给电
