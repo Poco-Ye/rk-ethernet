@@ -708,7 +708,26 @@ index be7c60b..d15b088 100644
 selinux的问题
 adb shell setenforce 0
 ```
+47、3568 4.19的内核没有对phy地址自动扫描功能造成读不到phy
+```
+    rgmii_phy0: phy@0 {
+        compatible = "ethernet-phy-ieee802.3-c22";
+ -       reg = <0x0>;
+ +       reg = <0x1>;
+    };
+};
 
+
+    rgmii_phy0: phy@0 {
+        compatible = "ethernet-phy-ieee802.3-c22";
+ -       reg = <0x1>;
+ +       reg = <0x0>;
+    };
+};
+
+phy地址设置0x0或者0x1都测试一下
+
+```
 
 ```
 ethtool -s eth0 speed 100 duplex full autoneg off
