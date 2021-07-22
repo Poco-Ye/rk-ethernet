@@ -1,0 +1,131 @@
+hcq@server-101:~/RK3399_Linux_SDK_v2.0/kernel$ git diff drivers/net/ethernet/realtek/r8169.c 
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 4eff143..0e90891 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -29,6 +29,7 @@
+ #include <linux/prefetch.h>
+ #include <linux/ipv6.h>
+ #include <net/ip6_checksum.h>
++#include <linux/soc/rockchip/rk_vendor_storage.h>
+ 
+ #include <asm/io.h>
+ #include <asm/irq.h>
+@@ -166,6 +167,8 @@ enum rtl_tx_desc_version {
+        RTL_TD_1        = 1,
+ };
+ 
++u8 eth0_mac_addr[6] = {0,0,0,0,0,0};
++
+ #define JUMBO_1K       ETH_DATA_LEN
+ #define JUMBO_4K       (4*1024 - ETH_HLEN - 2)
+ #define JUMBO_6K       (6*1024 - ETH_HLEN - 2)
+@@ -7650,6 +7653,35 @@ static void rtl8169_netpoll(struct net_device *dev)
+ }
+ #endif
+ 
++static int rk_set_vendor_mac_address(struct net_device *dev,void *p)
++{
++
++  struct rtl8169_private *tp = netdev_priv(dev);
++  int i,ret;
++
++  printk("%s",__func__);
++
++       ret = rk_vendor_read(BT_MAC_ID, eth0_mac_addr, 6);
++       if (ret != 6 || is_zero_ether_addr(eth0_mac_addr)) {
++                printk("%s: rk_vendor_read eth mac address failed (%d)\n",__func__, ret);               
++               random_ether_addr(eth0_mac_addr);
++       }
++
++       printk("get vendor mac address:");
++       ether_addr_copy(dev->dev_addr,eth0_mac_addr);
++       rtl_rar_set(tp, dev->dev_addr);
++       
++       for(i=0;i<6;i++){
++               printk("%02x",eth0_mac_addr[i]);
++       }
++ 
++
++ return 0;
++
++}
++
++
++
+ static int rtl_open(struct net_device *dev)
+ {
+        struct rtl8169_private *tp = netdev_priv(dev);
+@@ -7659,6 +7691,10 @@ static int rtl_open(struct net_device *dev)
+ 
+        pm_runtime_get_sync(&pdev->dev);
+ 
++       if(!is_valid_ether_addr(eth0_mac_addr)){
++
++           rk_set_vendor_mac_address(dev,tp);
++       }
+        /*
+         * Rx and Tx descriptors needs 256 bytes alignment.
+         * dma_alloc_coherent provides more.
+@@ -8355,6 +8391,7 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+                *(u32 *)&mac_addr[0] = rtl_eri_read(tp, 0xe0, ERIAR_EXGMAC);
+                *(u16 *)&mac_addr[2] = rtl_eri_read(tp, 0xe4, ERIAR_EXGMAC);
++               
+ 
+                if (is_valid_ether_addr((u8 *)mac_addr))
+                        rtl_rar_set(tp, (u8 *)mac_addr);
+(END)
+
+
+
+@@ -8154,7 +8155,7 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+        struct net_device *dev;
+        void __iomem *ioaddr;
+        int chipset, i;
+-       int rc;
++       int rc,ret;
+
+        if (netif_msg_drv(&debug)) {
+                printk(KERN_INFO "%s Gigabit Ethernet driver %s loaded\n",
+@@ -8345,15 +8346,37 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+            tp->mac_version == RTL_GIGA_MAC_VER_50 ||
+            tp->mac_version == RTL_GIGA_MAC_VER_51) {
+                u16 mac_addr[3];
+
+                *(u32 *)&mac_addr[0] = rtl_eri_read(tp, 0xe0, ERIAR_EXGMAC);
+                *(u16 *)&mac_addr[2] = rtl_eri_read(tp, 0xe4, ERIAR_EXGMAC);
++               
++               if(!is_valid_ether_addr((u8 *)mac_addr))
++               {
++                        ret = rk_vendor_read(BT_MAC_ID, eth0_mac_addr, 6);
++                     if (ret != 6 || is_zero_ether_addr(eth0_mac_addr)) {
++                       printk("%s: rk_vendor_read eth mac address failed (%d)\n",__func__, ret);               
++                       random_ether_addr(eth0_mac_addr);
++                       
++                       }
++               }
++               *(u32 *)&mac_addr[0] = (eth0_mac_addr[3] | eth0_mac_addr[2] << 8 | eth0_mac_addr[1] << 16 | eth0_mac_addr[0] << 24);
++               *(u16 *)&mac_addr[2] = (eth0_mac_addr[4] << 8 | eth0_mac_addr[5]);
++               
++               printk("%s flash mac:",__func__);
++               for(i=0;i<3;i++){
++                       printk("%04x ",mac_addr[i]);
++               }
++                               
+
+                if (is_valid_ether_addr((u8 *)mac_addr)){
++				        ether_addr_copy(dev->dev_addr,eth0_mac_addr);
+                        rtl_rar_set(tp, (u8 *)mac_addr);
+				}
+        }
+-       for (i = 0; i < ETH_ALEN; i++)
++       printk("%s read controller mac address: ",__func__);
++       for (i = 0; i < ETH_ALEN; i++){
+                dev->dev_addr[i] = RTL_R8(MAC0 + i);
++               printk("%02x:",dev->dev_addr[i]);
++       }
+
+        dev->ethtool_ops = &rtl8169_ethtool_ops;
+        dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
+		
