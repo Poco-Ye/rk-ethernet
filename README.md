@@ -728,6 +728,17 @@ adb shell setenforce 0
 phy地址设置0x0或者0x1都测试一下
 
 ```
+48、关闭pause帧
+``` 
+ethtool -A eth0 tx off
+ethtool -A eth0 rx off
+ethtool -a eth0
+Pause parameters for eth0:
+Autonegotiate: on
+RX: on
+TX: on
+```
+
 
 ```
 ethtool -s eth0 speed 100 duplex full autoneg off
