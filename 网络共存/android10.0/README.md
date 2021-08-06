@@ -92,4 +92,15 @@ wifi连手机热点，以太网连路由，可以不在同一个网段测试
 ![image](./1.png)
 ![image](./2.png)
 
-
+## 防止```score```更新
+```
+setprop log.tag.NativeDaemonConnector D
+setprop log.tag.NetworkManagement D
+setprop log.tag.NetworkAgentInfo D
+setprop log.tag.ConnectivityService D
+setprop log.tag.netd D
+setprop log.tag.EthernetNetworkFactory D
+setprop log.tag.NetworkFactory D
+setprop log.tag.NetworkAgent D
+setprop log.tag.DnsManager D
+```
