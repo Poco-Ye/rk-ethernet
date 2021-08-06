@@ -4,6 +4,11 @@
      assigned-clock-rates = <1000000000>;
  };
 
+给的文档RV1126 复用配置有问题，比如改成这样
+pinctrl-names = "default";
+pinctrl-0 = <&gmac_clk_m0_drv_level0_pins &rgmiim0_pins &clk_out_ethernetm0_pins>;
+
+
 
 3399的CRU寄存器在0xff760000
 
