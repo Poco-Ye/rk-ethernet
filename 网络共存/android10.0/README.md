@@ -92,7 +92,7 @@ wifi连手机热点，以太网连路由，可以不在同一个网段测试
 ![image](./1.png)
 ![image](./2.png)
 
-## 防止```score```更新
+## 防止score更新
 ```
 setprop log.tag.NativeDaemonConnector D
 setprop log.tag.NetworkManagement D
