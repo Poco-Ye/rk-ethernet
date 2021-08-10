@@ -755,6 +755,7 @@ index 0e8937c..f1c6c97 100644
                 if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
                         break;
 ```
+```
 ethtool -s eth0 speed 100 duplex full autoneg off
 
 --------------rtl8211------------------
