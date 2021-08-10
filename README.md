@@ -738,8 +738,22 @@ Autonegotiate: on
 RX: on
 TX: on
 ```
-
-
+49、概率DMA错误
+```
+kernel$ git diff
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
+index 0e8937c..f1c6c97 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
+@@ -39,7 +39,7 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
+        /* DMA SW reset */
+        value |= DMA_BUS_MODE_SFT_RESET;
+        writel(value, ioaddr + DMA_BUS_MODE);
+-       limit = 10;
++       limit = 100;
+        while (limit--) {
+                if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
+                        break;
 ```
 ethtool -s eth0 speed 100 duplex full autoneg off
 
