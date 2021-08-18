@@ -34,11 +34,32 @@ snps,reset-delays-us = <0 10000 50000>;
 pinctrl-names = "default";
 pinctrl-0 = <&rgmii_pins>;
 tx_delay = <0x28>;
-};
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-vop-clk-set.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-vop-clk-set.dtsi
+index f13985c..489592b 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-vop-clk-set.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-vop-clk-set.dtsi
+@@ -148,7 +148,7 @@
+<50000000>, <100000000>,
+<75000000>, <75000000>,
+<816000000>, <816000000>,
+- <600000000>, <200000000>,
++ <1000000000>, <200000000>,
+<800000000>, <150000000>,
+<75000000>, <37500000>,
+<300000000>, <100000000>,
+diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
+index 21aee0c..13f8baa 100644
+--- a/drivers/clk/clk-conf.c
++++ b/drivers/clk/clk-conf.c
+@@ -62,6 +62,8 @@ static int __set_clk_parents(struct device_node *node, bool clk_supplier)
+goto err;
+}
 
-+&cru {
-+     assigned-clocks = <&cru PLL_NPLL>;
-+     assigned-clock-rates = <1000000000>;
-+ };
++ pr_err("wxt_clk: clk %s to pclk:%s\n",
++ __clk_get_name(clk), __clk_get_name(pclk));
+rc = clk_set_parent(clk, pclk);
+if (rc < 0)
+pr_err("clk: failed to reparent %s to %s: %d\n",
+
 
 
