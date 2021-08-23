@@ -7,8 +7,7 @@ index 308e328..dbc7a1f 100644
      }
  
 -    private void maybeTrackInterface(String iface) {
-+    //xlr change for reboot and ethernet can't connect 20.12.17
-+    //private void maybeTrackInterface(String iface) {
+
 +    private boolean maybeTrackInterface(String iface) {
          if (DBG) Log.i(TAG, "maybeTrackInterface " + iface);
          // If we don't already track this interface, and if this interface matches
@@ -24,7 +23,6 @@ index 308e328..dbc7a1f 100644
          }
  
          addInterface(iface);
-+        //xlr add 20.12.17
 +        return true;
      }
  
@@ -33,7 +31,6 @@ index 308e328..dbc7a1f 100644
              final String[] ifaces = mNMService.listInterfaces();
              for (String iface : ifaces) {
 -                maybeTrackInterface(iface);
-+                //xlr change for reboot and ethernet can't connect 20.12.17
 +                //maybeTrackInterface(iface);
 +				if (maybeTrackInterface(iface)) {
 +                    String mIfaceTmp = iface;
