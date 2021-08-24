@@ -755,6 +755,41 @@ index 0e8937c..f1c6c97 100644
                 if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
                         break;
 ```
+50、关掉IPV6
+```
+把IPV6关闭验证看
+diff --git a/services/core/java/com/android/server/NetworkManagementService.java b/services/core/java/com/android/server/NetworkManagementService.java
+index 6d6fd84..20ed306 100644
+--- a/services/core/java/com/android/server/NetworkManagementService.java
++++ b/services/core/java/com/android/server/NetworkManagementService.java
+@@ -1086,10 +1086,12 @@ public class NetworkManagementService extends INetworkManagementService.Stub
+     @Override
+     public void setInterfaceIpv6PrivacyExtensions(String iface, boolean enable) {
+         mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
+-        try {
++        enable= 0;
++       try {
+             mConnector.execute(
+                     "interface", "ipv6privacyextensions", iface, enable ? "enable" : "disable");
+-        } catch (NativeDaemonConnectorException e) {
++         Slog.d(TAG, "hcq test force ipv6privacyextensions disable");
++         } catch (NativeDaemonConnectorException e) {
+             throw e.rethrowAsParcelableException();
+         }
+     }
+@@ -1110,7 +1112,8 @@ public class NetworkManagementService extends INetworkManagementService.Stub
+     public void enableIpv6(String iface) {
+         mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
+         try {
+-            mConnector.execute("interface", "ipv6", iface, "enable");
++           Slog.d(TAG, "hcq test force disableIpv6");
++            mConnector.execute("interface", "ipv6", iface, "disable");
+         } catch (NativeDaemonConnectorException e) {
+             throw e.rethrowAsParcelableException();
+         }
+```
+
+
 ```
 ethtool -s eth0 speed 100 duplex full autoneg off
 
