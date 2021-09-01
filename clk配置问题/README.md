@@ -475,7 +475,9 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
 
 
 3566百兆输出上25M接法
-叶彬:
+
+这个输入
+
 &gmac1_clkin{
     clock-frequency = <50000000>;
 };
@@ -512,10 +514,8 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
     };
 };
 
-叶彬:
-先试一下这个输入的
 
-叶彬:
+
 &gmac1 {
 
     phy-mode = "rmii";
