@@ -473,6 +473,83 @@ clk: failed to reparent mac_clk to clkin_gmac: -22
 };
 
 
+
+3566百兆输出上25M接法
+叶彬:
+&gmac1_clkin{
+    clock-frequency = <50000000>;
+};
+
+&gmac1 {
+        phy-mode = "rmii";
+    clock_in_out = "input"; //input or output
+
+    snps,reset-gpio = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
+    snps,reset-active-low;
+    snps,reset-delays-us = <0 20000 100000>;
+
+    assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>, <&cru CLK_MAC1_OUT>;
+    assigned-clock-parents = <&cru SCLK_GMAC1_RMII_SPEED>,<&gmac1_clkin>;
+    assigned-clock-rates = <0>, <0>, <25000000>;
+
+    pinctrl-names = "default";
+    pinctrl-0 = <&gmac1m0_miim
+             &gmac1m0_clkinout
+             &gmac1m0_tx_bus2
+             &gmac1m0_rx_bus2
+             &gmac1m0_rx_er
+             &eth1m0_pins>;
+
+    phy-handle = <&rmii_phy1>;
+    status = "okay";
+};
+
+&mdio1 {
+    rmii_phy1: phy@0 {
+        compatible = "ethernet-phy-ieee802.3-c22";
+        reg = <0x0>;
+        clocks = <&cru CLK_MAC1_OUT>;
+    };
+};
+
+叶彬:
+先试一下这个输入的
+
+叶彬:
+&gmac1 {
+
+    phy-mode = "rmii";
+    clock_in_out = "output";
+
+    snps,reset-gpio = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
+    snps,reset-active-low;
+    snps,reset-delays-us = <0 20000 100000>;
+
+    assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>, <&cru CLK_MAC1_OUT>;
+    assigned-clock-parents = <&cru SCLK_GMAC1_RMII_SPEED>;
+    assigned-clock-rates = <0>, <50000000>, <25000000>;
+
+    pinctrl-names = "default";
+    pinctrl-0 = <&gmac1m0_miim
+             &gmac1m0_clkinout
+             &gmac1m0_tx_bus2
+             &gmac1m0_rx_bus2
+             &gmac1m0_rx_er
+             &eth1m0_pins>;
+
+    phy-handle = <&rmii_phy1>;
+    status = "okay";
+};
+
+&mdio1 {
+    rmii_phy1: phy@0 {
+        compatible = "ethernet-phy-ieee802.3-c22";
+        reg = <0x0>;
+        clocks = <&cru CLK_MAC1_OUT>;
+    };
+};
+
+
 ```
 
 
