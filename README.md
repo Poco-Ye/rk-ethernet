@@ -682,7 +682,22 @@ index b3b8d87..df62d72 100644
  
         if (priv->plat->phy_node) {
         
-        
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 6288288..b9489ea 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -2959,8 +2959,7 @@ int stmmac_dvr_probe(struct device *device,
+
+        ndev->netdev_ops = &stmmac_netdev_ops;
+
+-       ndev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+-                           NETIF_F_RXCSUM;
++       ndev->hw_features = NETIF_F_SG ;
+        ndev->features |= ndev->hw_features | NETIF_F_HIGHDMA;
+        ndev->watchdog_timeo = msecs_to_jiffies(watchdog);
+ #ifdef STMMAC_VLAN_TAG_USED
+
+
         
 --- a/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
 +++ b/drivers/net/ethernet/rockchip/gmac/stmmac_main.c
