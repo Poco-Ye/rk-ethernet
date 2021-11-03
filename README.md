@@ -300,6 +300,22 @@ mw.l 0xFF490460 0xffff0020
 mw.l 0xFE010040 0xffff2222
 mw.l 0xFE01003c 0xffff2222
 
+uboot下的phy驱动，发现uboot/drivers/net/phy/realtek.c中有相关8211F LED的配置，原始代码如下：
+
+static int rtl8211f_config(struct phy_device *phydev)
+{       
+        u16 reg;
+
+        phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, BMCR_RESET);
+
+        phy_write(phydev, MDIO_DEVAD_NONE,
+                  MIIM_RTL8211F_PAGE_SELECT, 0xd08);
+        reg = phy_read(phydev, MDIO_DEVAD_NONE, 0x11);
+
+        /* enable TX-delay for rgmii-id and rgmii-txid, otherwise disable it */
+        if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
+            phydev->interface == PHY_INTERFACE_MODE_RGMII_TXID)
+
 ```
 
 24、关于休眠唤醒
