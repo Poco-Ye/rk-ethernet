@@ -837,6 +837,98 @@ index 6d6fd84..20ed306 100644
 比如：是buildroot中的一个应用导致的，把相关应用关闭后，掉速问题没出现
 比如：有加2N7002隔离电源。最近买的一批2N7002换了品牌，抗干扰能力弱一点，开起开关的layout宇MDC走线近了一点。所以会偶尔出现问题。我们把开起驱动的电阻改小了，加强了驱动能力。就不会出现问题。
 ```
+52、更换eth注册顺序
+```
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399.dtsi b/arch/arm64/boot/dts/rockchip/rk3399.dtsi
+index 7d8ef2d..5562915 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399.dtsi
+@@ -469,6 +469,7 @@
+                        power-domains = <&power RK3399_PD_USB3>;
+                        resets = <&cru SRST_A_USB3_OTG0>;
+                        reset-names = "usb3-otg";
++                       snps,dw3_controller_address = "fe800000";
+                        snps,dis_enblslpm_quirk;
+                        snps,dis-u2-freeclk-exists-quirk;
+                        snps,dis_u2_susphy_quirk;
+@@ -503,6 +504,7 @@
+                        power-domains = <&power RK3399_PD_USB3>;
+                        resets = <&cru SRST_A_USB3_OTG1>;
+                        reset-names = "usb3-otg";
++                       snps,dw3_controller_address = "fe900000";
+                        snps,dis_enblslpm_quirk;
+                        snps,dis-u2-freeclk-exists-quirk;
+                        snps,dis_u2_susphy_quirk;
+
+hcq@ubuntu101:~/3399/kernel$ git diff drivers/usb/
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index bc0a111..cc2499af 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -40,7 +40,7 @@
+ #include "debug.h" 
+
+ #define DWC3_DEFAULT_AUTOSUSPEND_DELAY 5000 /* ms */
+-
++const char *dw3_controller_address = NULL;
+ /**
+  * dwc3_get_dr_mode - Validates and sets dr_mode
+  * @dwc: pointer to our context structure
+@@ -1568,7 +1568,7 @@ static int dwc3_probe(struct platform_device *pdev)
+        int                     ret;
+
+        void __iomem            *regs;
+-
++
+        dwc = devm_kzalloc(dev, sizeof(*dwc), GFP_KERNEL);
+        if (!dwc)
+                return -ENOMEM;
+@@ -1630,8 +1630,12 @@ static int dwc3_probe(struct platform_device *pdev)
+                return -ENODEV;
+        }
+
++       ret = of_property_read_string(dev->of_node, "snps,dw3_controller_address", &dw3_controller_address);
++       if (ret)
++               dev_err(dev, "Can not read property: snps,dw3_controller_address.\n");
++
+        dwc3_get_properties(dwc);
+-
++
+        if (dev->of_node) {
+                dwc->num_clks = ARRAY_SIZE(dwc3_core_clks);
+
+hcq@ubuntu101:~/3399/kernel$ git diff drivers/net/usb/
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index ae631d9..aeee7b1 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -703,7 +703,7 @@ enum rtl8152_flags {
+
+ #define MCU_TYPE_PLA                   0x0100
+ #define MCU_TYPE_USB                   0x0000
+-
++extern const char *dw3_controller_address;
+ struct tally_counter {
+        __le64  tx_packets;
+        __le64  rx_packets;
+@@ -6839,6 +6839,16 @@ static int rtl8152_probe(struct usb_interface *intf,
+
+        usb_set_intfdata(intf, tp);
+        netif_napi_add(netdev, &tp->napi, r8152_poll, RTL8152_NAPI_WEIGHT);
++       if(dw3_controller_address != NULL){
++
++        printk("%s dw3_controller_address=%s\n",__func__,dw3_controller_address);
++
++       if (!strcmp(dw3_controller_address, "fe800000"))
++               strcpy(netdev->name,"eth0");
++
++       if (!strcmp(dw3_controller_address, "fe900000"))
++           strcpy(netdev->name,"eth1");
++       }
+
+        ret = register_netdev(netdev);
+        if (ret != 0) {
+```
 
 
 ```
