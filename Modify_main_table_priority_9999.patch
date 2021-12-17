@@ -1,0 +1,49 @@
+hcq@ubuntu:~/RK3229_ANDROID7.1_BOX-SDK_V1.00_20170831/system/netd$ git diff .
+
+diff --git a/server/RouteController.cpp b/server/RouteController.cpp
+
+index fa39c89..4601d48 100644
+
+--- a/server/RouteController.cpp
+
++++ b/server/RouteController.cpp
+
+@@ -59,7 +59,7 @@ const uint32_t RULE_PRIORITY_IMPLICIT_NETWORK    = 19000;
+
+ const uint32_t RULE_PRIORITY_BYPASSABLE_VPN      = 20000;
+
+ const uint32_t RULE_PRIORITY_VPN_FALLTHROUGH     = 21000;
+
+ const uint32_t RULE_PRIORITY_DEFAULT_NETWORK     = 22000;
+
+-const uint32_t RULE_PRIORITY_DIRECTLY_CONNECTED  = 23000;
+
++const uint32_t RULE_PRIORITY_DIRECTLY_CONNECTED  = 9999;
+
+ const uint32_t RULE_PRIORITY_UNREACHABLE         = 32000;
+
+
+
+ const uint32_t ROUTE_TABLE_LOCAL_NETWORK  = 97;
+
+@@ -726,9 +726,10 @@ WARN_UNUSED_RESULT int addDirectlyConnectedRule() {
+
+
+
+     fwmark.netId = NETID_UNSET;
+
+     mask.netId = FWMARK_NET_ID_MASK;
+
+-
+
++    fwmark.intValue = 0;
+
++    mask.intValue = 0;
+
+     return modifyIpRule(RTM_NEWRULE, RULE_PRIORITY_DIRECTLY_CONNECTED, RT_TABLE_MAIN,
+
+-                        fwmark.intValue, mask.intValue, IIF_NONE, OIF_NONE, UID_ROOT, UID_ROOT);
+
++                        fwmark.intValue, mask.intValue, IIF_NONE, OIF_NONE, INVALID_UID, INVALID_UID);
+
+ }
