@@ -300,6 +300,10 @@ mw.l 0xFF490460 0xffff0020
 mw.l 0xFE010040 0xffff2222
 mw.l 0xFE01003c 0xffff2222
 
+
+通过和kernel阶段寄存器的对比，发现是GRF_SOC_CON1寄存器中的值设置有差异，
+修改了rk3288_gmac_set_to_rmii接口，目前是可以正常ping通目标设备了
+
 uboot下的phy驱动，发现uboot/drivers/net/phy/realtek.c中有相关8211F LED的配置，原始代码如下：
 
 static int rtl8211f_config(struct phy_device *phydev)
@@ -315,6 +319,7 @@ static int rtl8211f_config(struct phy_device *phydev)
         /* enable TX-delay for rgmii-id and rgmii-txid, otherwise disable it */
         if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
             phydev->interface == PHY_INTERFACE_MODE_RGMII_TXID)
+
 
 ```
 
