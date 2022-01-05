@@ -935,10 +935,33 @@ index ae631d9..aeee7b1 100644
         if (ret != 0) {
 ```
 
-53
-、、、
+53、测UDP
+```
+DDR测试
+cat /sys/devices/platform/dmc/devfreq/dmc/available_frequencies
+echo userspace > /sys/devices/platform/dmc/devfreq/dmc/governor
+echo 528000000 > /sys/devices/platform/dmc/devfreq/dmc/min_freq
+cat /sys/devices/platform/dmc/devfreq/dmc/cur_freq
+cat /sys/devices/platform/dmc/devfreq/dmc/load
+
+
+CPU
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo   1416000 >  /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+UDP测试
+iperf -u -s -b 1600M -i 1
+iperf -u -c 192.168.1.5 -b 1600M -i 1 -t 20 -w 512K
+
+iperf3 -s -i 1
+iperf3 -u -c 192.168.1.5 -b 1000M -i 1 -t 20 -l 8000
+
+
 while true; do cat /proc/interrupts | grep eth0 ; echo -e "\n" ; sleep 5; done
-、、、
+```
 
 ```
 ethtool -s eth0 speed 100 duplex full autoneg off
