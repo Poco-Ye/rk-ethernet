@@ -935,6 +935,10 @@ index ae631d9..aeee7b1 100644
         if (ret != 0) {
 ```
 
+53
+、、、
+while true; do cat /proc/interrupts | grep eth0 ; echo -e "\n" ; sleep 5; done
+、、、
 
 ```
 ethtool -s eth0 speed 100 duplex full autoneg off
