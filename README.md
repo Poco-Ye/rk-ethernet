@@ -961,6 +961,26 @@ iperf3 -u -c 192.168.1.5 -b 1000M -i 1 -t 20 -l 8000
 
 
 while true; do cat /proc/interrupts | grep eth0 ; echo -e "\n" ; sleep 5; done
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
+index c3c0c8ca082c..e6fa3b1b2b92 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/common.h
++++ b/drivers/net/ethernet/stmicro/stmmac/common.h
+@@ -261,7 +261,7 @@ struct stmmac_safety_stats {
+ #define STMMAC_COAL_TX_TIMER   1000
+ #define STMMAC_MAX_COAL_TX_TICK        100000
+ #define STMMAC_TX_MAX_FRAMES   256
+-#define STMMAC_TX_FRAMES       1
++#define STMMAC_TX_FRAMES       25diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
+index c3c0c8ca082c..e6fa3b1b2b92 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/common.h
++++ b/drivers/net/ethernet/stmicro/stmmac/common.h
+@@ -261,7 +261,7 @@ struct stmmac_safety_stats {
+ #define STMMAC_COAL_TX_TIMER   1000
+ #define STMMAC_MAX_COAL_TX_TICK        100000
+ #define STMMAC_TX_MAX_FRAMES   256
+-#define STMMAC_TX_FRAMES       1
++#define STMMAC_TX_FRAMES       25
 ```
 
 ```
